@@ -1,9 +1,11 @@
 import type {
   AddLibraryEntryInput,
+  CreateLibraryCustomListInput,
   LibraryListQuery,
   ReadingStatus,
 } from "@contracts/library";
 import { getDatabase } from "@db/database";
+import { LibraryCustomListRepository } from "@db/repositories/library-custom-list-repository";
 import { LibraryRepository } from "@db/repositories/library-repository";
 
 export function addToLibrary(input: AddLibraryEntryInput) {
@@ -24,4 +26,30 @@ export function setLibraryReadingStatus(libraryEntryId: string, readingStatus: R
 export function setLibraryFavorite(libraryEntryId: string, isFavorite: boolean) {
   const repository = new LibraryRepository(getDatabase());
   return repository.updateFavorite(libraryEntryId, isFavorite);
+}
+
+export function createLibraryCustomList(input: CreateLibraryCustomListInput) {
+  const repository = new LibraryCustomListRepository(getDatabase());
+  return repository.create(input);
+}
+
+export function listLibraryCustomLists() {
+  const repository = new LibraryCustomListRepository(getDatabase());
+  return repository.listAll();
+}
+
+export function addLibraryEntryToCustomList(libraryEntryId: string, listId: string) {
+  const repository = new LibraryCustomListRepository(getDatabase());
+  repository.addEntryMembership(listId, libraryEntryId);
+
+  const libraryRepository = new LibraryRepository(getDatabase());
+  return libraryRepository.getById(libraryEntryId);
+}
+
+export function removeLibraryEntryFromCustomList(libraryEntryId: string, listId: string) {
+  const repository = new LibraryCustomListRepository(getDatabase());
+  repository.removeEntryMembership(listId, libraryEntryId);
+
+  const libraryRepository = new LibraryRepository(getDatabase());
+  return libraryRepository.getById(libraryEntryId);
 }

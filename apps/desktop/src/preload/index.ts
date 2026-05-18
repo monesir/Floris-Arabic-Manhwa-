@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
   AddLibraryEntryInput,
+  CreateLibraryCustomListInput,
+  LibraryCustomList,
   LibraryEntry,
   LibraryListQuery,
   ReadingStatus,
@@ -69,6 +71,21 @@ contextBridge.exposeInMainWorld("libraryStore", {
       libraryEntryId,
       isFavorite,
     ) as Promise<LibraryEntry | null>;
+  },
+});
+
+contextBridge.exposeInMainWorld("libraryLists", {
+  create(input: CreateLibraryCustomListInput) {
+    return ipcRenderer.invoke("library-lists:create", input) as Promise<LibraryCustomList>;
+  },
+  list() {
+    return ipcRenderer.invoke("library-lists:list") as Promise<LibraryCustomList[]>;
+  },
+  addEntry(libraryEntryId: string, listId: string) {
+    return ipcRenderer.invoke("library-lists:add-entry", libraryEntryId, listId) as Promise<LibraryEntry | null>;
+  },
+  removeEntry(libraryEntryId: string, listId: string) {
+    return ipcRenderer.invoke("library-lists:remove-entry", libraryEntryId, listId) as Promise<LibraryEntry | null>;
   },
 });
 

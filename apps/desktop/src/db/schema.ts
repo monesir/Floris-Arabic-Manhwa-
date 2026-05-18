@@ -42,6 +42,22 @@ const PHASE_ONE_SCHEMA = `
     UNIQUE(source_id, source_title_id),
     FOREIGN KEY(source_id) REFERENCES source_registry(source_id) ON DELETE RESTRICT
   );
+
+  CREATE TABLE IF NOT EXISTS library_custom_lists (
+    list_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS library_custom_list_memberships (
+    list_id TEXT NOT NULL,
+    library_entry_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (list_id, library_entry_id),
+    FOREIGN KEY(list_id) REFERENCES library_custom_lists(list_id) ON DELETE CASCADE,
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE CASCADE
+  );
 `;
 
 function ensureColumn(

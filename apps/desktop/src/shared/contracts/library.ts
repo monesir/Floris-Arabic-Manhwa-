@@ -14,6 +14,15 @@ export type LibraryEntry = {
   coverUrl: string | null;
   readingStatus: ReadingStatus;
   isFavorite: boolean;
+  listIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LibraryCustomList = {
+  listId: string;
+  name: string;
+  entryCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -30,5 +39,10 @@ export type LibraryListQuery = {
   search?: string;
   readingStatus?: ReadingStatus | "all";
   favoritesOnly?: boolean;
+  listId?: string | "all";
   sort?: "updated_desc" | "created_desc" | "title_asc" | "title_desc";
+};
+
+export type CreateLibraryCustomListInput = {
+  name: string;
 };

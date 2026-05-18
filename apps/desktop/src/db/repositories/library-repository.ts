@@ -17,6 +17,14 @@ const SELECT_LIBRARY_ENTRY = `
     cover_url AS coverUrl,
     reading_status AS readingStatus,
     is_favorite AS isFavorite,
+    COALESCE(
+      (
+        SELECT json_group_array(list_id)
+        FROM library_custom_list_memberships
+        WHERE library_custom_list_memberships.library_entry_id = library_entries.library_entry_id
+      ),
+      '[]'
+    ) AS listIdsJson,
     created_at AS createdAt,
     updated_at AS updatedAt
   FROM library_entries
@@ -31,12 +39,14 @@ function mapEntry(row: {
   coverUrl: string | null;
   readingStatus: ReadingStatus;
   isFavorite: number;
+  listIdsJson: string;
   createdAt: string;
   updatedAt: string;
 }): LibraryEntry {
   return {
     ...row,
     isFavorite: Boolean(row.isFavorite),
+    listIds: JSON.parse(row.listIdsJson) as string[],
   };
 }
 
@@ -156,6 +166,18 @@ export class LibraryRepository {
 
     if (query.favoritesOnly) {
       whereParts.push("is_favorite = 1");
+    }
+
+    if (query.listId && query.listId !== "all") {
+      whereParts.push(
+        `EXISTS (
+          SELECT 1
+          FROM library_custom_list_memberships
+          WHERE library_custom_list_memberships.library_entry_id = library_entries.library_entry_id
+            AND library_custom_list_memberships.list_id = @listId
+        )`,
+      );
+      params.listId = query.listId;
     }
 
     const whereClause = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";

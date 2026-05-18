@@ -1,8 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import type { LibraryEntry, ReadingStatus } from "@contracts/library";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import type {
+  LibraryCustomList,
+  LibraryEntry,
+  ReadingStatus,
+} from "@contracts/library";
 import type { SourceCatalogItem } from "@contracts/source";
+import { LibraryCustomListsPanel } from "@renderer/features/library/LibraryCustomListsPanel";
 import {
+  addLibraryEntryToList,
+  createLibraryList,
   listLibraryEntries,
+  listLibraryLists,
+  removeLibraryEntryFromList,
   updateLibraryEntryFavorite,
   updateLibraryEntryStatus,
 } from "@renderer/shared/library-store";
@@ -52,6 +61,7 @@ function initialsFromTitle(title: string) {
 
 export function LibraryPage() {
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
+  const [customLists, setCustomLists] = useState<LibraryCustomList[]>([]);
   const [catalog, setCatalog] = useState<SourceCatalogItem[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +69,10 @@ export function LibraryPage() {
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | "all">("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [selectedListId, setSelectedListId] = useState<string | "all">("all");
   const [sortOrder, setSortOrder] = useState<(typeof SORT_OPTIONS)[number]["value"]>("updated_desc");
+  const [listNameDraft, setListNameDraft] = useState("");
+  const [isCreatingList, setIsCreatingList] = useState(false);
   const [pendingEntryIds, setPendingEntryIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -71,12 +84,15 @@ export function LibraryPage() {
         search: searchValue,
         readingStatus: statusFilter,
         favoritesOnly,
+        listId: selectedListId,
         sort: sortOrder,
       }),
+      listLibraryLists(),
       getSourceCatalog(),
     ])
-      .then(([libraryEntries, sourceCatalog]) => {
+      .then(([libraryEntries, libraryLists, sourceCatalog]) => {
         setEntries(libraryEntries);
+        setCustomLists(libraryLists);
         setCatalog(sourceCatalog);
         setStatus("ready");
       })
@@ -84,7 +100,7 @@ export function LibraryPage() {
         setStatus("error");
         setError(nextError instanceof Error ? nextError.message : "Failed to load local library.");
       });
-  }, [favoritesOnly, searchValue, sortOrder, statusFilter]);
+  }, [favoritesOnly, searchValue, selectedListId, sortOrder, statusFilter]);
 
   const sourceLabels = useMemo(
     () =>
@@ -127,6 +143,22 @@ export function LibraryPage() {
     });
   }
 
+  function refreshLibraryState() {
+    return Promise.all([
+      listLibraryEntries({
+        search: searchValue,
+        readingStatus: statusFilter,
+        favoritesOnly,
+        listId: selectedListId,
+        sort: sortOrder,
+      }),
+      listLibraryLists(),
+    ]).then(([nextEntries, nextLists]) => {
+      setEntries(nextEntries);
+      setCustomLists(nextLists);
+    });
+  }
+
   function handleApplySearch() {
     setSearchValue(searchDraft.trim());
   }
@@ -136,6 +168,7 @@ export function LibraryPage() {
     setSearchValue("");
     setStatusFilter("all");
     setFavoritesOnly(false);
+    setSelectedListId("all");
     setSortOrder("updated_desc");
   }
 
@@ -149,15 +182,7 @@ export function LibraryPage() {
           throw new Error("Library entry no longer exists.");
         }
 
-        return listLibraryEntries({
-          search: searchValue,
-          readingStatus: statusFilter,
-          favoritesOnly,
-          sort: sortOrder,
-        });
-      })
-      .then((nextEntries) => {
-        setEntries(nextEntries);
+        return refreshLibraryState();
       })
       .catch((nextError: unknown) => {
         setError(
@@ -181,15 +206,7 @@ export function LibraryPage() {
           throw new Error("Library entry no longer exists.");
         }
 
-        return listLibraryEntries({
-          search: searchValue,
-          readingStatus: statusFilter,
-          favoritesOnly,
-          sort: sortOrder,
-        });
-      })
-      .then((nextEntries) => {
-        setEntries(nextEntries);
+        return refreshLibraryState();
       })
       .catch((nextError: unknown) => {
         setError(
@@ -197,6 +214,55 @@ export function LibraryPage() {
             ? nextError.message
             : "Failed to update favorite state.",
         );
+      })
+      .finally(() => {
+        setPending(entry.libraryEntryId, false);
+      });
+  }
+
+  function handleCreateList(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const nextName = listNameDraft.trim();
+    if (!nextName || isCreatingList) {
+      return;
+    }
+
+    setIsCreatingList(true);
+    setError(null);
+
+    void createLibraryList({ name: nextName })
+      .then((nextList) => {
+        setListNameDraft("");
+        setSelectedListId(nextList.listId);
+        return refreshLibraryState();
+      })
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to create custom list.");
+      })
+      .finally(() => {
+        setIsCreatingList(false);
+      });
+  }
+
+  function handleToggleListMembership(entry: LibraryEntry, list: LibraryCustomList) {
+    setPending(entry.libraryEntryId, true);
+    setError(null);
+
+    const task = entry.listIds.includes(list.listId)
+      ? removeLibraryEntryFromList(entry.libraryEntryId, list.listId)
+      : addLibraryEntryToList(entry.libraryEntryId, list.listId);
+
+    void task
+      .then((nextEntry) => {
+        if (!nextEntry) {
+          throw new Error("Library entry no longer exists.");
+        }
+
+        return refreshLibraryState();
+      })
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to update custom list membership.");
       })
       .finally(() => {
         setPending(entry.libraryEntryId, false);
@@ -212,8 +278,8 @@ export function LibraryPage() {
         <h1 className="page__title">Organize saved titles as a real local library</h1>
         <p className="page__copy">
           Phase 3 turns the library into a usable collection surface with persisted
-          reading statuses, favorite marks, and filterable cover cards built on the
-          existing Phase 2 identity model.
+          reading statuses, favorite marks, custom lists, and filterable cover cards
+          built on the existing Phase 2 identity model.
         </p>
         <div className="page__grid">
           <div className="page__card">
@@ -225,8 +291,8 @@ export function LibraryPage() {
             <div className="page__card-value">{favoriteCount}</div>
           </div>
           <div className="page__card">
-            <div className="page__card-label">Active state</div>
-            <div className="page__card-value">{status === "ready" ? "Live" : status}</div>
+            <div className="page__card-label">Custom lists</div>
+            <div className="page__card-value">{customLists.length}</div>
           </div>
         </div>
       </section>
@@ -330,6 +396,16 @@ export function LibraryPage() {
         </div>
       </section>
 
+      <LibraryCustomListsPanel
+        customLists={customLists}
+        selectedListId={selectedListId}
+        draftName={listNameDraft}
+        isCreating={isCreatingList}
+        onDraftNameChange={setListNameDraft}
+        onCreateList={handleCreateList}
+        onSelectList={setSelectedListId}
+      />
+
       <section className="page__panel">
         <div className="library-toolbar__header">
           <div>
@@ -422,6 +498,29 @@ export function LibraryPage() {
                       ))}
                     </select>
                   </label>
+
+                  <div className="library-memberships">
+                    <span className="library-field__label">Custom lists</span>
+                    {customLists.length === 0 ? (
+                      <p className="library-card__meta">
+                        No lists created yet. Create one above to organize titles beyond status and favorites.
+                      </p>
+                    ) : (
+                      <div className="library-memberships__grid">
+                        {customLists.map((list) => (
+                          <label className="library-membership-chip" key={list.listId}>
+                            <input
+                              type="checkbox"
+                              checked={entry.listIds.includes(list.listId)}
+                              disabled={isPending}
+                              onChange={() => handleToggleListMembership(entry, list)}
+                            />
+                            <span>{list.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </article>
             );

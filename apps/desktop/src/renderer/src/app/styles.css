@@ -963,6 +963,37 @@ select {
   gap: 0.7rem;
 }
 
+.library-lists-panel {
+  gap: 1rem;
+}
+
+.library-list-create {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+}
+
+.library-list-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.library-list-chip {
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(245, 247, 251, 0.86);
+  cursor: pointer;
+}
+
+.library-list-chip--active {
+  border-color: rgba(245, 138, 150, 0.24);
+  background: rgba(245, 138, 150, 0.14);
+  color: #ffe1e5;
+}
+
 .library-card--rich {
   grid-template-columns: 1fr;
   gap: 0.9rem;
@@ -1013,6 +1044,27 @@ select {
 .library-card__meta-stack {
   display: grid;
   gap: 0.35rem;
+}
+
+.library-memberships {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.library-memberships__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.library-membership-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .library-reading-status {
@@ -1089,6 +1141,10 @@ select {
 
   .library-toolbar__header {
     display: grid;
+  }
+
+  .library-list-create {
+    grid-template-columns: 1fr;
   }
 
   .browse-chapter-table__head,

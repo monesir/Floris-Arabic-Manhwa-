@@ -1,5 +1,7 @@
 import type {
   AddLibraryEntryInput,
+  CreateLibraryCustomListInput,
+  LibraryCustomList,
   LibraryEntry,
   LibraryListQuery,
   ReadingStatus,
@@ -19,4 +21,20 @@ export function updateLibraryEntryStatus(libraryEntryId: string, readingStatus: 
 
 export function updateLibraryEntryFavorite(libraryEntryId: string, isFavorite: boolean) {
   return window.libraryStore.updateFavorite(libraryEntryId, isFavorite) as Promise<LibraryEntry | null>;
+}
+
+export function createLibraryList(input: CreateLibraryCustomListInput) {
+  return window.libraryLists.create(input) as Promise<LibraryCustomList>;
+}
+
+export function listLibraryLists() {
+  return window.libraryLists.list() as Promise<LibraryCustomList[]>;
+}
+
+export function addLibraryEntryToList(libraryEntryId: string, listId: string) {
+  return window.libraryLists.addEntry(libraryEntryId, listId) as Promise<LibraryEntry | null>;
+}
+
+export function removeLibraryEntryFromList(libraryEntryId: string, listId: string) {
+  return window.libraryLists.removeEntry(libraryEntryId, listId) as Promise<LibraryEntry | null>;
 }

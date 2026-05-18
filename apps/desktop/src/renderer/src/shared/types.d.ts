@@ -1,5 +1,7 @@
 import type {
   AddLibraryEntryInput,
+  CreateLibraryCustomListInput,
+  LibraryCustomList,
   LibraryEntry,
   LibraryListQuery,
   ReadingStatus,
@@ -53,6 +55,12 @@ declare global {
         libraryEntryId: string,
         isFavorite: boolean,
       ) => Promise<LibraryEntry | null>;
+    };
+    libraryLists: {
+      create: (input: CreateLibraryCustomListInput) => Promise<LibraryCustomList>;
+      list: () => Promise<LibraryCustomList[]>;
+      addEntry: (libraryEntryId: string, listId: string) => Promise<LibraryEntry | null>;
+      removeEntry: (libraryEntryId: string, listId: string) => Promise<LibraryEntry | null>;
     };
     sourceRegistry: {
       getCatalog: () => Promise<SourceCatalogItem[]>;
