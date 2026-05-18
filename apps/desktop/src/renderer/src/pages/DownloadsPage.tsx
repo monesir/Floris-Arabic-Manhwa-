@@ -1,24 +1,35 @@
 import { useEffect, useState } from "react";
-import type { DownloadJob, DownloadQueueSummary } from "@contracts/downloads";
+import type {
+  DownloadJob,
+  DownloadQueueSummary,
+  DownloadSettingsSnapshot,
+} from "@contracts/downloads";
 import {
+  getDownloadSettings,
   getDownloadQueueSummary,
   listDownloadJobs,
+  pickExternalDownloadDirectory,
+  retryDownload,
+  setDownloadDestinationType,
 } from "@renderer/shared/downloads-store";
 
 export function DownloadsPage() {
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [summary, setSummary] = useState<DownloadQueueSummary | null>(null);
+  const [settings, setSettings] = useState<DownloadSettingsSnapshot | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
 
   function refreshDownloads() {
     setStatus("loading");
     setError(null);
 
-    void Promise.all([listDownloadJobs(), getDownloadQueueSummary()])
-      .then(([nextJobs, nextSummary]) => {
+    void Promise.all([listDownloadJobs(), getDownloadQueueSummary(), getDownloadSettings()])
+      .then(([nextJobs, nextSummary, nextSettings]) => {
         setJobs(nextJobs);
         setSummary(nextSummary);
+        setSettings(nextSettings);
         setStatus("ready");
       })
       .catch((nextError: unknown) => {
@@ -30,6 +41,44 @@ export function DownloadsPage() {
   useEffect(() => {
     refreshDownloads();
   }, []);
+
+  function handleChangeDestinationType(destinationType: "app_managed" | "external") {
+    setError(null);
+
+    void setDownloadDestinationType(destinationType)
+      .then((nextSettings) => {
+        setSettings(nextSettings);
+      })
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to update destination type.");
+      });
+  }
+
+  function handlePickExternalDirectory() {
+    setError(null);
+
+    void pickExternalDownloadDirectory()
+      .then((nextSettings) => {
+        setSettings(nextSettings);
+      })
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to choose external directory.");
+      });
+  }
+
+  function handleRetry(jobId: string) {
+    setPendingJobId(jobId);
+    setError(null);
+
+    void retryDownload(jobId)
+      .then(() => refreshDownloads())
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to retry download job.");
+      })
+      .finally(() => {
+        setPendingJobId(null);
+      });
+  }
 
   return (
     <section className="page">
@@ -70,6 +119,53 @@ export function DownloadsPage() {
       </div>
 
       <section className="page__panel">
+        <div className="library-toolbar__header">
+          <div>
+            <h2 className="page__panel-title">Download destination</h2>
+            <p className="page__panel-copy">
+              Downloads can stay inside app-managed storage or be written into an external folder.
+            </p>
+          </div>
+        </div>
+        <div className="library-toolbar__grid">
+          <label className="library-field">
+            <span className="library-field__label">Destination mode</span>
+            <select
+              className="browse-controls__select"
+              value={settings?.preferredDestinationType ?? "app_managed"}
+              onChange={(event) =>
+                handleChangeDestinationType(event.target.value as "app_managed" | "external")
+              }
+            >
+              <option value="app_managed">App-managed</option>
+              <option value="external">External folder</option>
+            </select>
+          </label>
+
+          <label className="library-field">
+            <span className="library-field__label">App-managed path</span>
+            <div className="page__pill">{settings?.appManagedPath ?? "--"}</div>
+          </label>
+
+          <label className="library-field">
+            <span className="library-field__label">External path</span>
+            <div className="browse-chapter-row__actions-inline">
+              <div className="page__pill">
+                {settings?.externalDestinationPath ?? "Not selected"}
+              </div>
+              <button
+                type="button"
+                className="browse-search__button browse-search__button--ghost"
+                onClick={handlePickExternalDirectory}
+              >
+                Choose folder
+              </button>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <section className="page__panel">
         {status === "loading" ? <p className="browse-message">Loading download queue...</p> : null}
         {error ? <p className="browse-message browse-message--error">{error}</p> : null}
         {status === "ready" && jobs.length === 0 ? (
@@ -101,6 +197,16 @@ export function DownloadsPage() {
                 <p className="updates-card__meta">
                   Updated: {new Date(job.updatedAt).toLocaleString()}
                 </p>
+                {job.status === "failed" ? (
+                  <button
+                    type="button"
+                    className="browse-search__button browse-search__button--ghost"
+                    disabled={pendingJobId === job.jobId}
+                    onClick={() => handleRetry(job.jobId)}
+                  >
+                    {pendingJobId === job.jobId ? "Retrying..." : "Retry"}
+                  </button>
+                ) : null}
                 {job.errorMessage ? (
                   <p className="browse-message browse-message--error">{job.errorMessage}</p>
                 ) : null}

@@ -76,6 +76,14 @@ export class DownloadJobRepository {
   }
 
   enqueue(input: EnqueueDownloadInput, destinationPath: string) {
+    return this.enqueueWithDestination(input, "app_managed", destinationPath);
+  }
+
+  enqueueWithDestination(
+    input: EnqueueDownloadInput,
+    destinationType: "app_managed" | "external",
+    destinationPath: string,
+  ) {
     const now = new Date().toISOString();
     const jobId = randomUUID();
 
@@ -109,7 +117,7 @@ export class DownloadJobRepository {
             @chapterTitle,
             @coverUrl,
             'pending',
-            'app_managed',
+            @destinationType,
             @destinationPath,
             0,
             0,
@@ -128,6 +136,7 @@ export class DownloadJobRepository {
         chapterId: input.chapterId,
         chapterTitle: input.chapterTitle,
         coverUrl: input.coverUrl,
+        destinationType,
         destinationPath,
         createdAt: now,
         updatedAt: now,
@@ -175,6 +184,28 @@ export class DownloadJobRepository {
       .get() as DownloadJobRow | undefined;
 
     return row ? mapJob(row) : null;
+  }
+
+  retry(jobId: string) {
+    const now = new Date().toISOString();
+
+    this.database
+      .prepare(
+        `
+          UPDATE download_jobs
+          SET
+            status = 'pending',
+            total_files = 0,
+            completed_files = 0,
+            error_message = NULL,
+            completed_at = NULL,
+            updated_at = ?
+          WHERE job_id = ? AND status = 'failed'
+        `,
+      )
+      .run(now, jobId);
+
+    return this.getById(jobId);
   }
 
   updateStatus(

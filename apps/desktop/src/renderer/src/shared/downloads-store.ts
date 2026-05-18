@@ -1,6 +1,7 @@
 import type {
   DownloadJob,
   DownloadQueueSummary,
+  DownloadSettingsSnapshot,
   EnqueueDownloadInput,
 } from "@contracts/downloads";
 
@@ -14,4 +15,20 @@ export function listDownloadJobs() {
 
 export function getDownloadQueueSummary() {
   return window.downloadsStore.getSummary() as Promise<DownloadQueueSummary>;
+}
+
+export function getDownloadSettings() {
+  return window.downloadsStore.getSettings() as Promise<DownloadSettingsSnapshot>;
+}
+
+export function setDownloadDestinationType(destinationType: "app_managed" | "external") {
+  return window.downloadsStore.setDestinationType(destinationType) as Promise<DownloadSettingsSnapshot>;
+}
+
+export function pickExternalDownloadDirectory() {
+  return window.downloadsStore.pickExternalDirectory() as Promise<DownloadSettingsSnapshot>;
+}
+
+export function retryDownload(jobId: string) {
+  return window.downloadsStore.retry(jobId) as Promise<DownloadJob | null>;
 }

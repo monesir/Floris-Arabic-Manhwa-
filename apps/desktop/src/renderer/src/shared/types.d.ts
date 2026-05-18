@@ -12,6 +12,7 @@ import type { PluginListItem } from "@contracts/plugin";
 import type {
   DownloadJob,
   DownloadQueueSummary,
+  DownloadSettingsSnapshot,
   EnqueueDownloadInput,
 } from "@contracts/downloads";
 import type {
@@ -104,6 +105,12 @@ declare global {
       enqueue: (input: EnqueueDownloadInput) => Promise<DownloadJob | null>;
       list: () => Promise<DownloadJob[]>;
       getSummary: () => Promise<DownloadQueueSummary>;
+      getSettings: () => Promise<DownloadSettingsSnapshot>;
+      setDestinationType: (
+        destinationType: "app_managed" | "external",
+      ) => Promise<DownloadSettingsSnapshot>;
+      pickExternalDirectory: () => Promise<DownloadSettingsSnapshot>;
+      retry: (jobId: string) => Promise<DownloadJob | null>;
     };
   }
 }

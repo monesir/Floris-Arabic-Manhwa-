@@ -19,6 +19,7 @@ import type {
 import type {
   DownloadJob,
   DownloadQueueSummary,
+  DownloadSettingsSnapshot,
   EnqueueDownloadInput,
 } from "@contracts/downloads";
 import type {
@@ -169,5 +170,20 @@ contextBridge.exposeInMainWorld("downloadsStore", {
   },
   getSummary() {
     return ipcRenderer.invoke("downloads:get-summary") as Promise<DownloadQueueSummary>;
+  },
+  getSettings() {
+    return ipcRenderer.invoke("downloads:get-settings") as Promise<DownloadSettingsSnapshot>;
+  },
+  setDestinationType(destinationType: "app_managed" | "external") {
+    return ipcRenderer.invoke(
+      "downloads:set-destination-type",
+      destinationType,
+    ) as Promise<DownloadSettingsSnapshot>;
+  },
+  pickExternalDirectory() {
+    return ipcRenderer.invoke("downloads:pick-external-directory") as Promise<DownloadSettingsSnapshot>;
+  },
+  retry(jobId: string) {
+    return ipcRenderer.invoke("downloads:retry", jobId) as Promise<DownloadJob | null>;
   },
 });

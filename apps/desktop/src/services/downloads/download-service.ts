@@ -2,11 +2,19 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { getDatabase } from "@db/database";
 import { DownloadJobRepository } from "@db/repositories/download-job-repository";
-import type { DownloadJob, DownloadQueueSummary, EnqueueDownloadInput } from "@contracts/downloads";
+import { SettingsRepository } from "@db/repositories/settings-repository";
+import type {
+  DownloadJob,
+  DownloadQueueSummary,
+  DownloadSettingsSnapshot,
+  EnqueueDownloadInput,
+} from "@contracts/downloads";
 import { getSourceChapterPages } from "@services/sources/source-registry";
 
 let appManagedDownloadsRoot = "";
 let isProcessingQueue = false;
+const DOWNLOAD_DESTINATION_TYPE_KEY = "downloads.destination_type";
+const DOWNLOAD_EXTERNAL_PATH_KEY = "downloads.external_path";
 
 function sanitizeSegment(value: string) {
   return value
@@ -18,6 +26,10 @@ function sanitizeSegment(value: string) {
 
 function getRepository() {
   return new DownloadJobRepository(getDatabase());
+}
+
+function getSettingsRepository() {
+  return new SettingsRepository(getDatabase());
 }
 
 function ensureInitialized() {
@@ -122,7 +134,13 @@ export function initializeDownloadService(userDataPath: string) {
 export function enqueueDownload(input: EnqueueDownloadInput) {
   ensureInitialized();
   const repository = getRepository();
-  const job = repository.enqueue(input, appManagedDownloadsRoot);
+  const settings = getDownloadSettings();
+  const destinationType = settings.preferredDestinationType;
+  const destinationPath =
+    destinationType === "external" && settings.externalDestinationPath
+      ? settings.externalDestinationPath
+      : appManagedDownloadsRoot;
+  const job = repository.enqueueWithDestination(input, destinationType, destinationPath);
   void processQueue();
   return job;
 }
@@ -142,4 +160,40 @@ export function getDownloadQueueSummary(): DownloadQueueSummary {
     completed: jobs.filter((job) => job.status === "completed").length,
     failed: jobs.filter((job) => job.status === "failed").length,
   };
+}
+
+export function retryDownload(jobId: string) {
+  const job = getRepository().retry(jobId);
+  if (job) {
+    void processQueue();
+  }
+  return job;
+}
+
+export function getDownloadSettings(): DownloadSettingsSnapshot {
+  ensureInitialized();
+  const settingsRepository = getSettingsRepository();
+  const preferredDestinationType =
+    settingsRepository.getValue(DOWNLOAD_DESTINATION_TYPE_KEY) === "external"
+      ? "external"
+      : "app_managed";
+  const externalDestinationPath = settingsRepository.getValue(DOWNLOAD_EXTERNAL_PATH_KEY);
+
+  return {
+    preferredDestinationType,
+    externalDestinationPath,
+    appManagedPath: appManagedDownloadsRoot,
+  };
+}
+
+export function updateDownloadDestinationType(destinationType: "app_managed" | "external") {
+  const settingsRepository = getSettingsRepository();
+  settingsRepository.setValue(DOWNLOAD_DESTINATION_TYPE_KEY, destinationType);
+  return getDownloadSettings();
+}
+
+export function updateExternalDownloadPath(path: string) {
+  const settingsRepository = getSettingsRepository();
+  settingsRepository.setValue(DOWNLOAD_EXTERNAL_PATH_KEY, path);
+  return getDownloadSettings();
 }

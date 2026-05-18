@@ -43,3 +43,9 @@ export type DownloadQueueSummary = {
   completed: number;
   failed: number;
 };
+
+export type DownloadSettingsSnapshot = {
+  preferredDestinationType: DownloadDestinationType;
+  externalDestinationPath: string | null;
+  appManagedPath: string;
+};
