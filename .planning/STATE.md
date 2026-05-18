@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 3 of 6 (Library Workflow)
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: Ready to execute
-Last activity: 2026-05-18 - Completed 03-01 library organization and cover-first UI
+Last activity: 2026-05-18 - Completed 03-02 custom lists and membership management
 
-Progress: [####------] 37%
+Progress: [####------] 42%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 8
 - Average duration: 21 min
-- Total execution time: 2.4 hours
+- Total execution time: 2.8 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [####------] 37%
 |-------|-------|-------|----------|
 | 1 | 3 | 55 min | 18 min |
 | 2 | 3 | 65 min | 22 min |
-| 3 | 1 | 24 min | 24 min |
+| 3 | 2 | 47 min | 24 min |
 
 **Recent Trend:**
-- Last 5 plans: 17 min, 28 min, 24 min, 13 min, 24 min
-- Trend: Stable with schema-to-UI vertical slices continuing to hold
+- Last 5 plans: 28 min, 24 min, 13 min, 24 min, 23 min
+- Trend: Stable with library workflow slices landing cleanly
 
 ## Accumulated Context
 
@@ -61,10 +61,11 @@ Recent decisions affecting current work:
 - 03-01 execution: Expand `library_entries` in place with persisted cover, status, and favorite fields rather than replacing the identity model.
 - 03-01 execution: Keep library organization mutations library-owned and available directly from the Library route.
 - 03-01 execution: Treat plugin/source bootstrap cleanup as FK-aware so referenced source rows are preserved.
+- 03-02 execution: Model custom lists as first-class local entities with many-to-many membership records.
+- 03-02 execution: Keep list filtering and membership management inside the Library route rather than branching into a separate screen.
 
 ### Pending Todos
 
-- Execute `03-02` custom lists and membership management.
 - Execute `03-03` update detection, library badges, and the Updates route.
 
 ### Blockers/Concerns
@@ -72,7 +73,7 @@ Recent decisions affecting current work:
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
-- Custom lists and update visibility remain open inside Phase 3.
+- Update detection and visible chapter-change indicators remain open inside Phase 3.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
 
 ## Deferred Items
@@ -86,5 +87,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed 03-01 and prepared to continue Phase 3 execution
+Stopped at: Completed 03-02 and prepared to continue Phase 3 execution
 Resume file: .planning/ROADMAP.md

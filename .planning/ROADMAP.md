@@ -66,7 +66,7 @@ Plans:
 
 Plans:
 - [x] 03-01: Implement the library index, filters, sorting, favorites, and reading-status management.
-- [ ] 03-02: Add custom lists and related library organization flows.
+- [x] 03-02: Add custom lists and related library organization flows.
 - [ ] 03-03: Implement source refresh/update detection and expose it in the library and Updates views.
 
 ### Phase 4: Reader Core
@@ -127,7 +127,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation Shell | 3/3 | Complete | 2026-05-18 |
 | 2. Source Browse MVP | 3/3 | Complete | 2026-05-18 |
-| 3. Library Workflow | 1/3 | In progress | 2026-05-18 |
+| 3. Library Workflow | 2/3 | In progress | 2026-05-18 |
 | 4. Reader Core | 0/3 | Not started | - |
 | 5. Offline and Analytics | 0/4 | Not started | - |
 | 6. Plugin Hardening and Release Readiness | 0/3 | Not started | - |
