@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01: Bootstrap the Electron, React, and TypeScript app shell with the core route/page structure.
-- [ ] 01-02: Establish local persistence, schema/repository foundations, and settings storage.
+- [x] 01-02: Establish local persistence, schema/repository foundations, and settings storage.
 - [ ] 01-03: Implement preload/IPC boundaries plus the built-in source adapter contract skeleton.
 
 ### Phase 2: Source Browse MVP
@@ -125,7 +125,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation Shell | 1/3 | In progress | - |
+| 1. Foundation Shell | 2/3 | In progress | - |
 | 2. Source Browse MVP | 0/3 | Not started | - |
 | 3. Library Workflow | 0/3 | Not started | - |
 | 4. Reader Core | 0/3 | Not started | - |

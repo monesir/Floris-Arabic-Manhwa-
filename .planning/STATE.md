@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 1 of 6 (Foundation Shell)
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: Ready to execute
-Last activity: 2026-05-18 - Completed 01-01 desktop shell scaffold and prepared 01-02
+Last activity: 2026-05-18 - Completed 01-02 persistence spine and language settings flow
 
-Progress: [█░░░░░░░░░] 6%
+Progress: [##--------] 12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 9 min
-- Total execution time: 0.2 hours
+- Total plans completed: 2
+- Average duration: 19 min
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 1 | 9 min | 9 min |
+| 1 | 2 | 38 min | 19 min |
 
 **Recent Trend:**
-- Last 5 plans: 9 min
-- Trend: Stable
+- Last 5 plans: 9 min, 29 min
+- Trend: Stable with heavier integration work
 
 ## Accumulated Context
 
@@ -48,6 +48,8 @@ Recent decisions affecting current work:
 - Phase 1 planning: Treat built-in plugin runtime and external plugin validation as separate Phase 1 concerns.
 - 01-01 execution: Use a real pnpm workspace with `apps/desktop` as the shell root.
 - 01-01 execution: Keep the full navigation map visible now through intentional placeholder pages instead of hiding later routes.
+- 01-02 execution: Use built-in `node:sqlite` for the local database because the native `better-sqlite3` path failed against the current Electron runtime.
+- 01-02 execution: Use `process.env.ELECTRON_RENDERER_URL` and `../renderer/index.html` as the main-window loading path expected by `electron-vite@5`.
 
 ### Pending Todos
 
@@ -57,7 +59,7 @@ None yet.
 
 - Source extraction details for `azoramoon.com` and `olympustaff.com` still need phase-level validation before implementation.
 - External plugin trust boundaries need tighter planning before runtime loading is implemented.
-- The exact SQLite access and migration approach is still at the agent's discretion and must stay consistent with the locked persistence decisions.
+- `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 
 ## Deferred Items
 
@@ -70,5 +72,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed 01-01 and created its execution summary
+Stopped at: Completed 01-02 and created its execution summary
 Resume file: .planning/phases/01-foundation-shell/01-CONTEXT.md
