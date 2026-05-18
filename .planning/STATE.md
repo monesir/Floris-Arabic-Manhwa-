@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 5 of 6 (Offline and Analytics)
-Plan: 0 of 4 in current phase
-Status: Ready to discuss and plan
-Last activity: 2026-05-18 - Completed Phase 4 reader core including resume persistence
+Plan: 1 of 4 in current phase
+Status: Executing remaining Phase 5 plans
+Last activity: 2026-05-18 - Completed 05-01 app-managed download queue and real Downloads route
 
-Progress: [######----] 67%
+Progress: [#######---] 72%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 21 min
 - Total execution time: 3.1 hours
 
@@ -31,10 +31,11 @@ Progress: [######----] 67%
 | 2 | 3 | 65 min | 22 min |
 | 3 | 3 | 66 min | 22 min |
 | 4 | 3 | 41 min | 14 min |
+| 5 | 1 | 18 min | 18 min |
 
 **Recent Trend:**
-- Last 5 plans: 23 min, 19 min, 13 min, 15 min, 13 min
-- Trend: Stable with reader work completing faster than earlier infrastructure-heavy phases
+- Last 5 plans: 19 min, 13 min, 15 min, 13 min, 18 min
+- Trend: Stable; downloads added moderate main-process/storage complexity but remained within the recent execution band
 
 ## Accumulated Context
 
@@ -69,10 +70,14 @@ Recent decisions affecting current work:
 - 04-01 execution: Add a dedicated `/reader` route with its own IPC-backed state rather than embedding reader behavior inside browse.
 - 04-02 execution: Treat `RTL` as a paged reader mode while keeping app-level layout direction stable.
 - 04-03 execution: Persist progress by `source_id + source_title_id` with optional library linkage and use it to power `Continue`.
+- 05-01 execution: Materialize offline downloads through app-managed user-data storage before adding external destinations.
+- 05-01 execution: Persist download queue state in SQLite and resume interrupted `running` jobs as `pending` on app restart.
 
 ### Pending Todos
 
-- Discuss and plan Phase 5 with focus on downloads, imports, history, and reading-time analytics.
+- Execute 05-02 for external destinations and retry handling.
+- Execute 05-03 for local content import.
+- Execute 05-04 for reading history and per-title time analytics.
 
 ### Blockers/Concerns
 
@@ -80,7 +85,7 @@ Recent decisions affecting current work:
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
-- Download destination policy and local import normalization still need concrete execution choices in Phase 5.
+- External destination picking, retry UX, and import normalization still need completion in the remaining Phase 5 plans.
 
 ## Deferred Items
 
@@ -93,5 +98,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed Phase 4 and prepared to start Phase 5 discussion/planning
+Stopped at: Completed 05-01 and prepared to continue the rest of Phase 5
 Resume file: .planning/ROADMAP.md
