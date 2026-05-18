@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 2 of 6 (Source Browse MVP)
-Plan: 0 of 3 in current phase
-Status: Ready to discuss and plan
-Last activity: 2026-05-18 - Completed Phase 1 Foundation Shell
+Plan: 1 of 3 in current phase
+Status: Ready to execute
+Last activity: 2026-05-18 - Discussed and planned Phase 2
 
 Progress: [###-------] 18%
 
@@ -55,7 +55,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- Execute `02-01` to build the normalized built-in source runtime and initial site adapters.
 
 ### Blockers/Concerns
 
@@ -74,5 +74,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed Phase 1 and prepared to begin Phase 2 planning
-Resume file: .planning/phases/01-foundation-shell/01-CONTEXT.md
+Stopped at: Planned Phase 2 and prepared to execute `02-01`
+Resume file: .planning/phases/02-source-browse-mvp/02-CONTEXT.md
