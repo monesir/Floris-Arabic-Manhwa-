@@ -10,6 +10,7 @@ export default defineConfig({
         "@db": resolve(__dirname, "src/db"),
         "@services": resolve(__dirname, "src/services"),
         "@main": resolve(__dirname, "src/main"),
+        "@plugins": resolve(__dirname, "src/plugins"),
       },
     },
     plugins: [externalizeDepsPlugin()],
@@ -18,6 +19,7 @@ export default defineConfig({
     resolve: {
       alias: {
         "@contracts": resolve(__dirname, "src/shared/contracts"),
+        "@plugins": resolve(__dirname, "src/plugins"),
       },
     },
     plugins: [externalizeDepsPlugin()],
@@ -28,6 +30,7 @@ export default defineConfig({
         "@renderer": resolve(__dirname, "src/renderer/src"),
         "@contracts": resolve(__dirname, "src/shared/contracts"),
         "@services": resolve(__dirname, "src/services"),
+        "@plugins": resolve(__dirname, "src/plugins"),
       },
     },
     plugins: [react()],

@@ -1,22 +1,32 @@
-import { PlaceholderPage } from "@renderer/shared/PlaceholderPage";
+import { PluginRegistryPanel } from "@renderer/features/plugins/PluginRegistryPanel";
+import { useLanguage } from "@renderer/features/settings/language-context";
 
 export function PluginsPage() {
+  const { copy } = useLanguage();
+
   return (
-    <PlaceholderPage
-      eyebrow="Plugin boundary"
-      title="Plugins is a real route because the contract starts now"
-      summary="This shell route reserves the exact surface where built-in runtime plugins and externally discovered plugin records will appear. Phase 1 will make this page real when validation and registry state are wired in."
-      cards={[
-        { label: "Built-in runtime", value: "Yes" },
-        { label: "External execution", value: "Deferred" },
-        { label: "Manifest style", value: "Minimal + strict" },
-      ]}
-      nextSteps={[
-        "Show built-in and external plugin records with validation status.",
-        "Keep external plugins non-executing until the later hardening phase.",
-        "Derive source behavior from capability-driven contracts, not ad hoc UI state.",
-      ]}
-      accentPills={["Plugins", "Validation", "Source registry"]}
-    />
+    <section className="page">
+      <header className="page__hero">
+        <div className="page__eyebrow">{copy.pluginsEyebrow}</div>
+        <h1 className="page__title">{copy.pluginsTitle}</h1>
+        <p className="page__copy">{copy.pluginsSummary}</p>
+        <div className="page__grid">
+          <div className="page__card">
+            <div className="page__card-label">Built-in</div>
+            <div className="page__card-value">{copy.pluginsBuiltInValue}</div>
+          </div>
+          <div className="page__card">
+            <div className="page__card-label">{copy.pluginsValidationLabel}</div>
+            <div className="page__card-value">{copy.pluginsExternalValue}</div>
+          </div>
+          <div className="page__card">
+            <div className="page__card-label">{copy.pluginsExecutionLabel}</div>
+            <div className="page__card-value">{copy.pluginsRuntimeValue}</div>
+          </div>
+        </div>
+      </header>
+
+      <PluginRegistryPanel />
+    </section>
   );
 }

@@ -35,4 +35,32 @@ export class SourceRepository {
         updatedAt: timestamp,
       });
   }
+
+  listAll(): SourceRegistryRecord[] {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT
+            source_id AS sourceId,
+            plugin_id AS pluginId,
+            display_name AS displayName,
+            capabilities_json AS capabilitiesJson
+          FROM source_registry
+          ORDER BY plugin_id ASC, source_id ASC
+        `,
+      )
+      .all() as Array<{
+        sourceId: string;
+        pluginId: string;
+        displayName: string;
+        capabilitiesJson: string;
+      }>;
+
+    return rows.map((row) => ({
+      sourceId: row.sourceId,
+      pluginId: row.pluginId,
+      displayName: row.displayName,
+      capabilities: JSON.parse(row.capabilitiesJson) as SourceRegistryRecord["capabilities"],
+    }));
+  }
 }

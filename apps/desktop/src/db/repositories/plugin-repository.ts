@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { PluginRegistryRecord } from "@contracts/plugin";
+import type { PluginEntryType, PluginRegistryRecord } from "@contracts/plugin";
 
 export class PluginRepository {
   constructor(private readonly database: DatabaseSync) {}
@@ -35,5 +35,31 @@ export class PluginRepository {
         createdAt: timestamp,
         updatedAt: timestamp,
       });
+  }
+
+  deleteByEntryType(entryType: PluginEntryType) {
+    this.database
+      .prepare("DELETE FROM plugin_registry WHERE entry_type = ?")
+      .run(entryType);
+  }
+
+  listAll(): PluginRegistryRecord[] {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT
+            plugin_id AS pluginId,
+            name,
+            version,
+            entry_type AS entryType,
+            status,
+            failure_reason AS failureReason
+          FROM plugin_registry
+          ORDER BY entry_type ASC, plugin_id ASC
+        `,
+      )
+      .all();
+
+    return rows as PluginRegistryRecord[];
   }
 }

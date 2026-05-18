@@ -22,7 +22,8 @@
       "@contracts/*": ["src/shared/contracts/*"],
       "@db/*": ["src/db/*"],
       "@services/*": ["src/services/*"],
-      "@main/*": ["src/main/*"]
+      "@main/*": ["src/main/*"],
+      "@plugins/*": ["src/plugins/*"]
     },
     "types": ["node", "vite/client"]
   },
@@ -30,6 +31,7 @@
     "electron.vite.config.ts",
     "src/db",
     "src/main",
+    "src/plugins",
     "src/preload",
     "src/renderer/src",
     "src/services",

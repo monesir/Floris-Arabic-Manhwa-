@@ -1,3 +1,4 @@
+import type { PluginListItem } from "@contracts/plugin";
 import type {
   AppLanguage,
   AppSettingsSnapshot,
@@ -20,6 +21,12 @@ declare global {
     appSettings: {
       get: () => Promise<AppSettingsSnapshot>;
       setLanguage: (language: AppLanguage) => Promise<AppSettingsSnapshot>;
+    };
+    pluginRegistry: {
+      getState: () => Promise<{
+        pluginDirectory: string;
+        plugins: PluginListItem[];
+      }>;
     };
   }
 }

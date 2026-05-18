@@ -28,6 +28,21 @@ export type TranslationDictionary = {
   previewEnglish: string;
   previewArabic: string;
   futureLanguagesHint: string;
+  pluginsEyebrow: string;
+  pluginsTitle: string;
+  pluginsSummary: string;
+  pluginsDirectoryLabel: string;
+  pluginsValidationLabel: string;
+  pluginsExecutionLabel: string;
+  pluginsBuiltInValue: string;
+  pluginsExternalValue: string;
+  pluginsRuntimeValue: string;
+  pluginsPanelTitle: string;
+  pluginsPanelCopy: string;
+  pluginsEmpty: string;
+  pluginsSourcesLabel: string;
+  pluginsFailureLabel: string;
+  pluginsActionsLabel: string;
 };
 
 export const translations: Record<AppLanguage, TranslationDictionary> = {
@@ -59,6 +74,21 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     previewEnglish: "Library, settings, and future source details will use this same app-level language contract.",
     previewArabic: "المكتبة والإعدادات وصفحات العناوين المستقبلية ستعتمد على نفس عقد اللغة داخل التطبيق.",
     futureLanguagesHint: "The provider is keyed by language code so more locales can be added without changing the persistence model.",
+    pluginsEyebrow: "Plugin boundary",
+    pluginsTitle: "Plugins is now backed by a real registry surface",
+    pluginsSummary: "Built-in plugin runtime entries and external manifest validation now flow through the app's real registry path instead of static placeholder text.",
+    pluginsDirectoryLabel: "Plugin directory",
+    pluginsValidationLabel: "Validation",
+    pluginsExecutionLabel: "Execution",
+    pluginsBuiltInValue: "Built-in runtime active",
+    pluginsExternalValue: "External discovery + validation",
+    pluginsRuntimeValue: "External execution deferred",
+    pluginsPanelTitle: "Registry state",
+    pluginsPanelCopy: "The page reads the persisted plugin registry and source registry. External plugins may validate successfully here without being treated as active runtime sources yet.",
+    pluginsEmpty: "No plugin records were discovered yet.",
+    pluginsSourcesLabel: "Sources",
+    pluginsFailureLabel: "Failure reason",
+    pluginsActionsLabel: "Derived actions",
   },
   ar: {
     sidebarEyebrow: "واجهة ويندوز الأساسية",
@@ -88,5 +118,20 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     previewEnglish: "Library, settings, and future source details will use this same app-level language contract.",
     previewArabic: "المكتبة والإعدادات وصفحات العناوين المستقبلية ستعتمد على نفس عقد اللغة داخل التطبيق.",
     futureLanguagesHint: "المزوّد يعتمد على رمز اللغة، لذلك يمكن إضافة لغات أخرى لاحقًا دون تغيير نموذج الحفظ.",
+    pluginsEyebrow: "حد الإضافات",
+    pluginsTitle: "صفحة الإضافات أصبحت مرتبطة بسجل حقيقي",
+    pluginsSummary: "الإضافات المدمجة والتحقق من manifests الخارجية يمران الآن عبر سجل التطبيق الحقيقي بدل نص placeholder ثابت.",
+    pluginsDirectoryLabel: "مجلد الإضافات",
+    pluginsValidationLabel: "التحقق",
+    pluginsExecutionLabel: "التنفيذ",
+    pluginsBuiltInValue: "الإضافة المدمجة فعالة",
+    pluginsExternalValue: "اكتشاف خارجي مع تحقق",
+    pluginsRuntimeValue: "تنفيذ الخارجية مؤجل",
+    pluginsPanelTitle: "حالة السجل",
+    pluginsPanelCopy: "هذه الصفحة تقرأ سجل الإضافات وسجل المصادر الحقيقيين. قد تنجح الإضافة الخارجية في التحقق هنا دون أن تُعامل بعد كمصدر Runtime نشط.",
+    pluginsEmpty: "لم يتم اكتشاف أي سجلات إضافات بعد.",
+    pluginsSourcesLabel: "المصادر",
+    pluginsFailureLabel: "سبب الفشل",
+    pluginsActionsLabel: "الأفعال المشتقة",
   },
 };

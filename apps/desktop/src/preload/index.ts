@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { PluginListItem } from "@contracts/plugin";
 import type {
   AppLanguage,
   AppSettingsSnapshot,
@@ -22,5 +23,14 @@ contextBridge.exposeInMainWorld("appSettings", {
       "settings:set-language",
       language,
     ) as Promise<AppSettingsSnapshot>;
+  },
+});
+
+contextBridge.exposeInMainWorld("pluginRegistry", {
+  getState() {
+    return ipcRenderer.invoke("plugins:get-state") as Promise<{
+      pluginDirectory: string;
+      plugins: PluginListItem[];
+    }>;
   },
 });
