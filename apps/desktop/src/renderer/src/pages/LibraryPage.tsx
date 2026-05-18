@@ -11,6 +11,7 @@ import {
   createLibraryList,
   listLibraryEntries,
   listLibraryLists,
+  refreshLibraryUpdates,
   removeLibraryEntryFromList,
   updateLibraryEntryFavorite,
   updateLibraryEntryStatus,
@@ -73,6 +74,7 @@ export function LibraryPage() {
   const [sortOrder, setSortOrder] = useState<(typeof SORT_OPTIONS)[number]["value"]>("updated_desc");
   const [listNameDraft, setListNameDraft] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
+  const [isRefreshingUpdates, setIsRefreshingUpdates] = useState(false);
   const [pendingEntryIds, setPendingEntryIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -170,6 +172,20 @@ export function LibraryPage() {
     setFavoritesOnly(false);
     setSelectedListId("all");
     setSortOrder("updated_desc");
+  }
+
+  function handleRefreshUpdates() {
+    setIsRefreshingUpdates(true);
+    setError(null);
+
+    void refreshLibraryUpdates()
+      .then(() => refreshLibraryState())
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to refresh library updates.");
+      })
+      .finally(() => {
+        setIsRefreshingUpdates(false);
+      });
   }
 
   function handleStatusChange(libraryEntryId: string, readingStatus: ReadingStatus) {
@@ -273,25 +289,22 @@ export function LibraryPage() {
 
   return (
     <div className="page">
-      <section className="page__hero">
-        <span className="page__eyebrow">Collection workflow</span>
-        <h1 className="page__title">Organize saved titles as a real local library</h1>
-        <p className="page__copy">
-          Phase 3 turns the library into a usable collection surface with persisted
-          reading statuses, favorite marks, custom lists, and filterable cover cards
-          built on the existing Phase 2 identity model.
-        </p>
+      <section className="page__header page__header--split">
+        <div>
+          <span className="page__eyebrow">Library</span>
+          <h1 className="page__title page__title--compact">All Series</h1>
+        </div>
         <div className="page__grid">
           <div className="page__card">
-            <div className="page__card-label">Visible entries</div>
+            <div className="page__card-label">Entries</div>
             <div className="page__card-value">{entries.length}</div>
           </div>
           <div className="page__card">
-            <div className="page__card-label">Favorites in view</div>
+            <div className="page__card-label">Favorites</div>
             <div className="page__card-value">{favoriteCount}</div>
           </div>
           <div className="page__card">
-            <div className="page__card-label">Custom lists</div>
+            <div className="page__card-label">Lists</div>
             <div className="page__card-value">{customLists.length}</div>
           </div>
         </div>
@@ -312,6 +325,14 @@ export function LibraryPage() {
             onClick={handleResetFilters}
           >
             Reset filters
+          </button>
+          <button
+            type="button"
+            className="browse-search__button"
+            disabled={isRefreshingUpdates}
+            onClick={handleRefreshUpdates}
+          >
+            {isRefreshingUpdates ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
@@ -452,6 +473,9 @@ export function LibraryPage() {
                   >
                     {entry.isFavorite ? "Favorite" : "Mark favorite"}
                   </button>
+                  {entry.pendingUpdateCount > 0 ? (
+                    <div className="library-update-badge">{entry.pendingUpdateCount}</div>
+                  ) : null}
                 </div>
 
                 <div className="library-card__body">

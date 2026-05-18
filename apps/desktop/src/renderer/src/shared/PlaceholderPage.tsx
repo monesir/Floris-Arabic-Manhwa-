@@ -21,27 +21,28 @@ export function PlaceholderPage({
 }: PlaceholderPageProps) {
   return (
     <section className="page">
-      <header className="page__hero">
-        <div className="page__eyebrow">{eyebrow}</div>
-        <h1 className="page__title">{title}</h1>
-        <p className="page__copy">{summary}</p>
-        <div className="page__grid">
-          {cards.map((card) => (
-            <div className="page__card" key={card.label}>
-              <div className="page__card-label">{card.label}</div>
-              <div className="page__card-value">{card.value}</div>
-            </div>
-          ))}
+      <header className="page__header">
+        <div>
+          <div className="page__eyebrow">{eyebrow}</div>
+          <h1 className="page__title page__title--compact">{title}</h1>
+          <p className="page__copy">{summary}</p>
         </div>
       </header>
 
+      <div className="page__grid">
+        {cards.map((card) => (
+          <div className="page__card" key={card.label}>
+            <div className="page__card-label">{card.label}</div>
+            <div className="page__card-value">{card.value}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="page__panel page__placeholder">
-        <span className="page__placeholder-status">Smart placeholder</span>
-        <h2 className="page__panel-title">What this route proves right now</h2>
+        <span className="page__placeholder-status">Placeholder</span>
+        <h2 className="page__panel-title">Planned route</h2>
         <p className="page__panel-copy">
-          This page is intentionally present in the shell before the feature is
-          implemented. The goal is to lock the navigation contract and preserve
-          room for the richer title, reader, and plugin surfaces planned later.
+          This route exists in the shell already, but its workflow is not finished yet.
         </p>
         <ol className="page__placeholder-list">
           {nextSteps.map((step) => (

@@ -15,6 +15,10 @@ export type LibraryEntry = {
   readingStatus: ReadingStatus;
   isFavorite: boolean;
   listIds: string[];
+  pendingUpdateCount: number;
+  latestDetectedChapterTitle: string | null;
+  latestDetectedChapterId: string | null;
+  lastUpdateCheckedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -45,4 +49,23 @@ export type LibraryListQuery = {
 
 export type CreateLibraryCustomListInput = {
   name: string;
+};
+
+export type LibraryUpdateItem = {
+  libraryEntryId: string;
+  titleName: string;
+  coverUrl: string | null;
+  sourceId: string;
+  sourceTitleId: string;
+  pendingUpdateCount: number;
+  latestDetectedChapterId: string | null;
+  latestDetectedChapterTitle: string | null;
+  latestDetectedChapterReleaseDate: string | null;
+  lastUpdateCheckedAt: string | null;
+};
+
+export type LibraryRefreshSummary = {
+  checkedCount: number;
+  updatedCount: number;
+  updates: LibraryUpdateItem[];
 };

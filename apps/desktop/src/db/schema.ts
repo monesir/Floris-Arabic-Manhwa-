@@ -58,6 +58,20 @@ const PHASE_ONE_SCHEMA = `
     FOREIGN KEY(list_id) REFERENCES library_custom_lists(list_id) ON DELETE CASCADE,
     FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS library_entry_updates (
+    library_entry_id TEXT PRIMARY KEY,
+    known_latest_chapter_id TEXT,
+    known_latest_chapter_number REAL,
+    known_latest_chapter_title TEXT,
+    detected_latest_chapter_id TEXT,
+    detected_latest_chapter_title TEXT,
+    detected_latest_chapter_release_date TEXT,
+    pending_update_count INTEGER NOT NULL DEFAULT 0,
+    last_checked_at TEXT,
+    last_detected_at TEXT,
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE CASCADE
+  );
 `;
 
 function ensureColumn(

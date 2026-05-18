@@ -5,6 +5,8 @@ import type {
   LibraryCustomList,
   LibraryEntry,
   LibraryListQuery,
+  LibraryRefreshSummary,
+  LibraryUpdateItem,
   ReadingStatus,
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
@@ -71,6 +73,12 @@ contextBridge.exposeInMainWorld("libraryStore", {
       libraryEntryId,
       isFavorite,
     ) as Promise<LibraryEntry | null>;
+  },
+  refreshUpdates() {
+    return ipcRenderer.invoke("library:refresh-updates") as Promise<LibraryRefreshSummary>;
+  },
+  listUpdates() {
+    return ipcRenderer.invoke("library:list-updates") as Promise<LibraryUpdateItem[]>;
   },
 });
 

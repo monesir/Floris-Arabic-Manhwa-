@@ -1,12 +1,15 @@
 import type {
   AddLibraryEntryInput,
   CreateLibraryCustomListInput,
+  LibraryRefreshSummary,
   LibraryListQuery,
   ReadingStatus,
 } from "@contracts/library";
 import { getDatabase } from "@db/database";
 import { LibraryCustomListRepository } from "@db/repositories/library-custom-list-repository";
 import { LibraryRepository } from "@db/repositories/library-repository";
+import { LibraryUpdateRepository } from "@db/repositories/library-update-repository";
+import { getSourceTitleDetails } from "@services/sources/source-registry";
 
 export function addToLibrary(input: AddLibraryEntryInput) {
   const repository = new LibraryRepository(getDatabase());
@@ -52,4 +55,107 @@ export function removeLibraryEntryFromCustomList(libraryEntryId: string, listId:
 
   const libraryRepository = new LibraryRepository(getDatabase());
   return libraryRepository.getById(libraryEntryId);
+}
+
+export async function refreshLibraryUpdates(): Promise<LibraryRefreshSummary> {
+  const database = getDatabase();
+  const libraryRepository = new LibraryRepository(database);
+  const updateRepository = new LibraryUpdateRepository(database);
+  const entries = libraryRepository.listForRefresh();
+
+  let updatedCount = 0;
+
+  for (const entry of entries) {
+    try {
+      const payload = await getSourceTitleDetails(entry.sourceId, entry.sourceTitleId);
+      const readableChapters = payload.chapters.filter((chapter) => chapter.availability === "readable");
+      const chapterPool = readableChapters.length ? readableChapters : payload.chapters;
+      const latestChapter = chapterPool[0] ?? null;
+      const currentState = updateRepository.getByLibraryEntryId(entry.libraryEntryId);
+      const checkedAt = new Date().toISOString();
+
+      if (!latestChapter) {
+        updateRepository.upsert({
+          libraryEntryId: entry.libraryEntryId,
+          knownLatestChapterId: currentState?.knownLatestChapterId ?? null,
+          knownLatestChapterNumber: currentState?.knownLatestChapterNumber ?? null,
+          knownLatestChapterTitle: currentState?.knownLatestChapterTitle ?? null,
+          detectedLatestChapterId: null,
+          detectedLatestChapterTitle: null,
+          detectedLatestChapterReleaseDate: null,
+          pendingUpdateCount: 0,
+          lastCheckedAt: checkedAt,
+          lastDetectedAt: currentState?.lastDetectedAt ?? null,
+        });
+        continue;
+      }
+
+      if (!currentState?.knownLatestChapterId) {
+        updateRepository.upsert({
+          libraryEntryId: entry.libraryEntryId,
+          knownLatestChapterId: latestChapter.chapterId,
+          knownLatestChapterNumber: latestChapter.chapterNumber ?? null,
+          knownLatestChapterTitle: latestChapter.title,
+          detectedLatestChapterId: null,
+          detectedLatestChapterTitle: null,
+          detectedLatestChapterReleaseDate: null,
+          pendingUpdateCount: 0,
+          lastCheckedAt: checkedAt,
+          lastDetectedAt: null,
+        });
+        continue;
+      }
+
+      let pendingUpdateCount = 0;
+      const knownIndex = chapterPool.findIndex(
+        (chapter) => chapter.chapterId === currentState.knownLatestChapterId,
+      );
+
+      if (knownIndex > 0) {
+        pendingUpdateCount = knownIndex;
+      } else if (knownIndex === -1 && currentState.knownLatestChapterNumber !== null) {
+        const previousKnownChapterNumber = currentState.knownLatestChapterNumber;
+        pendingUpdateCount = chapterPool.filter((chapter) => {
+          if (chapter.chapterNumber === null) {
+            return false;
+          }
+
+          return chapter.chapterNumber > previousKnownChapterNumber;
+        }).length;
+      } else if (knownIndex === -1 && latestChapter.chapterId !== currentState.knownLatestChapterId) {
+        pendingUpdateCount = 1;
+      }
+
+      if (pendingUpdateCount > 0) {
+        updatedCount += 1;
+      }
+
+      updateRepository.upsert({
+        libraryEntryId: entry.libraryEntryId,
+        knownLatestChapterId: currentState.knownLatestChapterId,
+        knownLatestChapterNumber: currentState.knownLatestChapterNumber,
+        knownLatestChapterTitle: currentState.knownLatestChapterTitle,
+        detectedLatestChapterId: pendingUpdateCount > 0 ? latestChapter.chapterId : null,
+        detectedLatestChapterTitle: pendingUpdateCount > 0 ? latestChapter.title : null,
+        detectedLatestChapterReleaseDate:
+          pendingUpdateCount > 0 ? latestChapter.releaseDate ?? null : null,
+        pendingUpdateCount,
+        lastCheckedAt: checkedAt,
+        lastDetectedAt: pendingUpdateCount > 0 ? checkedAt : currentState.lastDetectedAt ?? null,
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return {
+    checkedCount: entries.length,
+    updatedCount,
+    updates: updateRepository.listPendingUpdates(),
+  };
+}
+
+export function listLibraryUpdates() {
+  const repository = new LibraryUpdateRepository(getDatabase());
+  return repository.listPendingUpdates();
 }

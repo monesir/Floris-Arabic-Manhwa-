@@ -4,6 +4,8 @@ import type {
   LibraryCustomList,
   LibraryEntry,
   LibraryListQuery,
+  LibraryRefreshSummary,
+  LibraryUpdateItem,
   ReadingStatus,
 } from "@contracts/library";
 
@@ -37,4 +39,12 @@ export function addLibraryEntryToList(libraryEntryId: string, listId: string) {
 
 export function removeLibraryEntryFromList(libraryEntryId: string, listId: string) {
   return window.libraryLists.removeEntry(libraryEntryId, listId) as Promise<LibraryEntry | null>;
+}
+
+export function refreshLibraryUpdates() {
+  return window.libraryStore.refreshUpdates() as Promise<LibraryRefreshSummary>;
+}
+
+export function listLibraryUpdates() {
+  return window.libraryStore.listUpdates() as Promise<LibraryUpdateItem[]>;
 }

@@ -25,6 +25,29 @@ const SELECT_LIBRARY_ENTRY = `
       ),
       '[]'
     ) AS listIdsJson,
+    COALESCE(
+      (
+        SELECT pending_update_count
+        FROM library_entry_updates
+        WHERE library_entry_updates.library_entry_id = library_entries.library_entry_id
+      ),
+      0
+    ) AS pendingUpdateCount,
+    (
+      SELECT detected_latest_chapter_title
+      FROM library_entry_updates
+      WHERE library_entry_updates.library_entry_id = library_entries.library_entry_id
+    ) AS latestDetectedChapterTitle,
+    (
+      SELECT detected_latest_chapter_id
+      FROM library_entry_updates
+      WHERE library_entry_updates.library_entry_id = library_entries.library_entry_id
+    ) AS latestDetectedChapterId,
+    (
+      SELECT last_checked_at
+      FROM library_entry_updates
+      WHERE library_entry_updates.library_entry_id = library_entries.library_entry_id
+    ) AS lastUpdateCheckedAt,
     created_at AS createdAt,
     updated_at AS updatedAt
   FROM library_entries
@@ -40,6 +63,10 @@ function mapEntry(row: {
   readingStatus: ReadingStatus;
   isFavorite: number;
   listIdsJson: string;
+  pendingUpdateCount: number;
+  latestDetectedChapterTitle: string | null;
+  latestDetectedChapterId: string | null;
+  lastUpdateCheckedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }): LibraryEntry {
@@ -245,6 +272,29 @@ export class LibraryRepository {
       });
 
     return this.getById(libraryEntryId);
+  }
+
+  listForRefresh() {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT
+            library_entry_id AS libraryEntryId,
+            source_id AS sourceId,
+            source_title_id AS sourceTitleId,
+            title_name AS titleName
+          FROM library_entries
+          ORDER BY updated_at DESC
+        `,
+      )
+      .all() as Array<{
+        libraryEntryId: string;
+        sourceId: string;
+        sourceTitleId: string;
+        titleName: string;
+      }>;
+
+    return rows;
   }
 
   countEntries() {

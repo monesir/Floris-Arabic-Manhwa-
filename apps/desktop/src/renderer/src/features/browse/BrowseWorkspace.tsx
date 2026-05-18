@@ -245,14 +245,12 @@ export function BrowseWorkspace() {
 
   return (
     <div className="browse-page">
-      <section className="browse-hero">
+      <section className="page__header page__header--split">
         <div>
-          <span className="page__eyebrow">Source lane</span>
-          <h1 className="page__title">Discover from live Arabic sources</h1>
-          <p className="page__copy">
-            Browse and search inside the supported sources through a normalized main-process runtime.
-            The renderer never scrapes the websites directly.
-          </p>
+          <span className="page__eyebrow">Browse</span>
+          <h1 className="page__title page__title--compact">
+            {activeSource?.metadata.displayName ?? "Sources"}
+          </h1>
         </div>
         <div className="browse-hero__facts">
           <div className="page__card">

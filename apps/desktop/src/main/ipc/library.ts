@@ -3,6 +3,8 @@ import type {
   AddLibraryEntryInput,
   CreateLibraryCustomListInput,
   LibraryListQuery,
+  LibraryRefreshSummary,
+  LibraryUpdateItem,
   ReadingStatus,
 } from "@contracts/library";
 import {
@@ -11,6 +13,8 @@ import {
   createLibraryCustomList,
   listLibraryEntries,
   listLibraryCustomLists,
+  listLibraryUpdates,
+  refreshLibraryUpdates,
   removeLibraryEntryFromCustomList,
   setLibraryFavorite,
   setLibraryReadingStatus,
@@ -24,6 +28,8 @@ const CREATE_LIBRARY_LIST_CHANNEL = "library-lists:create";
 const LIST_LIBRARY_LISTS_CHANNEL = "library-lists:list";
 const ADD_LIBRARY_LIST_MEMBERSHIP_CHANNEL = "library-lists:add-entry";
 const REMOVE_LIBRARY_LIST_MEMBERSHIP_CHANNEL = "library-lists:remove-entry";
+const REFRESH_LIBRARY_UPDATES_CHANNEL = "library:refresh-updates";
+const LIST_LIBRARY_UPDATES_CHANNEL = "library:list-updates";
 
 export function registerLibraryIpc() {
   ipcMain.handle(ADD_TO_LIBRARY_CHANNEL, (_, input: AddLibraryEntryInput) => addToLibrary(input));
@@ -47,5 +53,13 @@ export function registerLibraryIpc() {
   );
   ipcMain.handle(REMOVE_LIBRARY_LIST_MEMBERSHIP_CHANNEL, (_, libraryEntryId: string, listId: string) =>
     removeLibraryEntryFromCustomList(libraryEntryId, listId),
+  );
+  ipcMain.handle(
+    REFRESH_LIBRARY_UPDATES_CHANNEL,
+    (): Promise<LibraryRefreshSummary> => refreshLibraryUpdates(),
+  );
+  ipcMain.handle(
+    LIST_LIBRARY_UPDATES_CHANNEL,
+    (): Promise<LibraryUpdateItem[]> | LibraryUpdateItem[] => listLibraryUpdates(),
   );
 }

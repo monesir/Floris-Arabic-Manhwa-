@@ -4,6 +4,8 @@ import type {
   LibraryCustomList,
   LibraryEntry,
   LibraryListQuery,
+  LibraryRefreshSummary,
+  LibraryUpdateItem,
   ReadingStatus,
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
@@ -55,6 +57,8 @@ declare global {
         libraryEntryId: string,
         isFavorite: boolean,
       ) => Promise<LibraryEntry | null>;
+      refreshUpdates: () => Promise<LibraryRefreshSummary>;
+      listUpdates: () => Promise<LibraryUpdateItem[]>;
     };
     libraryLists: {
       create: (input: CreateLibraryCustomListInput) => Promise<LibraryCustomList>;
