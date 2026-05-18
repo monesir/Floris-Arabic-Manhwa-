@@ -226,6 +226,7 @@ export function BrowseWorkspace() {
       sourceTitleId: detail.details.titleId,
       titleName: detail.details.name,
       sourceTitleSlug: detail.details.slug,
+      coverUrl: detail.details.coverUrl,
     })
       .then((entry) => {
         setLibraryState((current) => ({

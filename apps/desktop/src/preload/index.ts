@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { AddLibraryEntryInput, LibraryEntry } from "@contracts/library";
+import type {
+  AddLibraryEntryInput,
+  LibraryEntry,
+  LibraryListQuery,
+  ReadingStatus,
+} from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
   AppLanguage,
@@ -48,8 +53,22 @@ contextBridge.exposeInMainWorld("libraryStore", {
   add(input: AddLibraryEntryInput) {
     return ipcRenderer.invoke("library:add", input) as Promise<LibraryEntry>;
   },
-  list() {
-    return ipcRenderer.invoke("library:list") as Promise<LibraryEntry[]>;
+  list(query?: LibraryListQuery) {
+    return ipcRenderer.invoke("library:list", query) as Promise<LibraryEntry[]>;
+  },
+  updateStatus(libraryEntryId: string, readingStatus: ReadingStatus) {
+    return ipcRenderer.invoke(
+      "library:update-status",
+      libraryEntryId,
+      readingStatus,
+    ) as Promise<LibraryEntry | null>;
+  },
+  updateFavorite(libraryEntryId: string, isFavorite: boolean) {
+    return ipcRenderer.invoke(
+      "library:update-favorite",
+      libraryEntryId,
+      isFavorite,
+    ) as Promise<LibraryEntry | null>;
   },
 });
 

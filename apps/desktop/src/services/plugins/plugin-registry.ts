@@ -17,13 +17,15 @@ export function bootstrapPluginRegistry(userDataPath: string) {
   const sourceRepository = new SourceRepository(database);
   const externalPlugins = discoverExternalPlugins(userDataPath);
 
-  sourceRepository.deleteByPluginId(builtInPluginRuntime.plugin.pluginId);
+  sourceRepository.deleteUnreferencedByPluginId(builtInPluginRuntime.plugin.pluginId);
   pluginRepository.upsert(builtInPluginRuntime.plugin);
   for (const source of builtInPluginRuntime.sources) {
     sourceRepository.upsert(source.registry);
   }
 
-  pluginRepository.deleteByEntryType("external");
+  for (const plugin of externalPlugins) {
+    sourceRepository.deleteUnreferencedByPluginId(plugin.plugin.pluginId);
+  }
 
   for (const externalPlugin of externalPlugins) {
     pluginRepository.upsert(externalPlugin.plugin);
@@ -31,6 +33,8 @@ export function bootstrapPluginRegistry(userDataPath: string) {
       sourceRepository.upsert(source);
     }
   }
+
+  pluginRepository.deleteUnreferencedByEntryType("external");
 }
 
 export function getPluginRegistryState(userDataPath: string) {

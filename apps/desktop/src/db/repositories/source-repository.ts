@@ -36,9 +36,19 @@ export class SourceRepository {
       });
   }
 
-  deleteByPluginId(pluginId: string) {
+  deleteUnreferencedByPluginId(pluginId: string) {
     this.database
-      .prepare("DELETE FROM source_registry WHERE plugin_id = ?")
+      .prepare(
+        `
+          DELETE FROM source_registry
+          WHERE plugin_id = ?
+            AND NOT EXISTS (
+              SELECT 1
+              FROM library_entries
+              WHERE library_entries.source_id = source_registry.source_id
+            )
+        `,
+      )
       .run(pluginId);
   }
 

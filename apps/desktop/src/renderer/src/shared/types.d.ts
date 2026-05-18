@@ -1,4 +1,9 @@
-import type { AddLibraryEntryInput, LibraryEntry } from "@contracts/library";
+import type {
+  AddLibraryEntryInput,
+  LibraryEntry,
+  LibraryListQuery,
+  ReadingStatus,
+} from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
   AppLanguage,
@@ -39,7 +44,15 @@ declare global {
     };
     libraryStore: {
       add: (input: AddLibraryEntryInput) => Promise<LibraryEntry>;
-      list: () => Promise<LibraryEntry[]>;
+      list: (query?: LibraryListQuery) => Promise<LibraryEntry[]>;
+      updateStatus: (
+        libraryEntryId: string,
+        readingStatus: ReadingStatus,
+      ) => Promise<LibraryEntry | null>;
+      updateFavorite: (
+        libraryEntryId: string,
+        isFavorite: boolean,
+      ) => Promise<LibraryEntry | null>;
     };
     sourceRegistry: {
       getCatalog: () => Promise<SourceCatalogItem[]>;

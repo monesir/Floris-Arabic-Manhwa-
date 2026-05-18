@@ -37,9 +37,19 @@ export class PluginRepository {
       });
   }
 
-  deleteByEntryType(entryType: PluginEntryType) {
+  deleteUnreferencedByEntryType(entryType: PluginEntryType) {
     this.database
-      .prepare("DELETE FROM plugin_registry WHERE entry_type = ?")
+      .prepare(
+        `
+          DELETE FROM plugin_registry
+          WHERE entry_type = ?
+            AND NOT EXISTS (
+              SELECT 1
+              FROM source_registry
+              WHERE source_registry.plugin_id = plugin_registry.plugin_id
+            )
+        `,
+      )
       .run(entryType);
   }
 
