@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation Shell** - establish the app shell, persistence spine, and safe Electron boundaries
 - [x] **Phase 2: Source Browse MVP** - prove the first real online source workflows end to end
-- [ ] **Phase 3: Library Workflow** - make saved titles organized, trackable, and visibly updated
+- [x] **Phase 3: Library Workflow** - make saved titles organized, trackable, and visibly updated
 - [ ] **Phase 4: Reader Core** - deliver the main reading experience with progress persistence and viewing modes
 - [ ] **Phase 5: Offline and Analytics** - add downloads, local imports, history, and reading-time tracking
 - [ ] **Phase 6: Plugin Hardening and Release Readiness** - support external plugins safely and prepare the app for distribution
@@ -67,7 +67,7 @@ Plans:
 Plans:
 - [x] 03-01: Implement the library index, filters, sorting, favorites, and reading-status management.
 - [x] 03-02: Add custom lists and related library organization flows.
-- [ ] 03-03: Implement source refresh/update detection and expose it in the library and Updates views.
+- [x] 03-03: Implement source refresh/update detection and expose it in the library and Updates views.
 
 ### Phase 4: Reader Core
 **Goal:** Deliver a real reading experience with multiple modes, chapter navigation, and reliable resume behavior.
@@ -127,7 +127,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation Shell | 3/3 | Complete | 2026-05-18 |
 | 2. Source Browse MVP | 3/3 | Complete | 2026-05-18 |
-| 3. Library Workflow | 2/3 | In progress | 2026-05-18 |
+| 3. Library Workflow | 3/3 | Complete | 2026-05-18 |
 | 4. Reader Core | 0/3 | Not started | - |
 | 5. Offline and Analytics | 0/4 | Not started | - |
 | 6. Plugin Hardening and Release Readiness | 0/3 | Not started | - |

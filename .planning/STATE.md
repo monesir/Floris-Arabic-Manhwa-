@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Reading from selected sources and managing a personal manhwa library must feel reliable, organized, and local-first without requiring any account or cloud dependency.
-**Current focus:** Phase 3 - Library Workflow
+**Current focus:** Phase 4 - Reader Core
 
 ## Current Position
 
-Phase: 3 of 6 (Library Workflow)
-Plan: 3 of 3 in current phase
-Status: Ready to execute
-Last activity: 2026-05-18 - Completed 03-02 custom lists and membership management
+Phase: 4 of 6 (Reader Core)
+Plan: 0 of 3 in current phase
+Status: Ready to discuss and plan
+Last activity: 2026-05-18 - Completed Phase 3 library workflow including tracked updates
 
-Progress: [####------] 42%
+Progress: [#####-----] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 21 min
-- Total execution time: 2.8 hours
+- Total execution time: 3.1 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [####------] 42%
 |-------|-------|-------|----------|
 | 1 | 3 | 55 min | 18 min |
 | 2 | 3 | 65 min | 22 min |
-| 3 | 2 | 47 min | 24 min |
+| 3 | 3 | 66 min | 22 min |
 
 **Recent Trend:**
-- Last 5 plans: 28 min, 24 min, 13 min, 24 min, 23 min
-- Trend: Stable with library workflow slices landing cleanly
+- Last 5 plans: 24 min, 13 min, 24 min, 23 min, 19 min
+- Trend: Stable with end-to-end vertical slices completing whole phases
 
 ## Accumulated Context
 
@@ -63,17 +63,19 @@ Recent decisions affecting current work:
 - 03-01 execution: Treat plugin/source bootstrap cleanup as FK-aware so referenced source rows are preserved.
 - 03-02 execution: Model custom lists as first-class local entities with many-to-many membership records.
 - 03-02 execution: Keep list filtering and membership management inside the Library route rather than branching into a separate screen.
+- 03-03 execution: Keep tracked update state in a separate table so refresh metadata does not distort the base library entry model.
+- 03-03 execution: Initialize update baselines on first refresh instead of marking the entire backlog as new.
 
 ### Pending Todos
 
-- Execute `03-03` update detection, library badges, and the Updates route.
+- Discuss and plan Phase 4 with focus on reader layout, chapter navigation, and progress persistence.
 
 ### Blockers/Concerns
 
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
-- Update detection and visible chapter-change indicators remain open inside Phase 3.
+- Reader mode and progress semantics still need product decisions before Phase 4 execution.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
 
 ## Deferred Items
@@ -87,5 +89,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed 03-02 and prepared to continue Phase 3 execution
+Stopped at: Completed Phase 3 and prepared to start Phase 4 discussion/planning
 Resume file: .planning/ROADMAP.md
