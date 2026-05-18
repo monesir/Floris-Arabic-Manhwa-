@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Reading from selected sources and managing a personal manhwa library must feel reliable, organized, and local-first without requiring any account or cloud dependency.
-**Current focus:** Phase 2 - Source Browse MVP
+**Current focus:** Phase 3 - Library Workflow
 
 ## Current Position
 
-Phase: 2 of 6 (Source Browse MVP)
-Plan: 2 of 3 in current phase
-Status: Ready to execute
-Last activity: 2026-05-18 - Executed `02-01` source runtime and built-in adapters
+Phase: 3 of 6 (Library Workflow)
+Plan: 0 of 3 in current phase
+Status: Ready to discuss and plan
+Last activity: 2026-05-18 - Completed Phase 2 source browse and library entry MVP
 
-Progress: [####------] 24%
+Progress: [#####-----] 34%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 21 min
-- Total execution time: 1.4 hours
+- Total plans completed: 6
+- Average duration: 20 min
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3 | 55 min | 18 min |
-| 2 | 1 | 28 min | 28 min |
+| 2 | 3 | 65 min | 22 min |
 
 **Recent Trend:**
-- Last 5 plans: 9 min, 29 min, 17 min, 28 min
-- Trend: Stable with rising parser integration complexity
+- Last 5 plans: 29 min, 17 min, 28 min, 24 min, 13 min
+- Trend: Stable with UI-to-persistence integration now proven
 
 ## Accumulated Context
 
@@ -55,16 +55,19 @@ Recent decisions affecting current work:
 - 01-03 execution: Discover external plugins from the app user-data `plugins` directory while keeping external runtime execution deferred.
 - 02-01 execution: Normalize browse/search/title/chapter data in the main process and expose it only through preload/IPC.
 - 02-01 execution: Model locked chapters explicitly in source results instead of treating them as readable pages.
+- 02-02 execution: Keep browse and title details inside one route using normalized query-param state instead of adding an early dedicated title route.
+- 02-03 execution: Use the existing `library_entries` identity schema now and defer richer library display data until Phase 3 expands organization features.
 
 ### Pending Todos
 
-- Execute `02-02` to replace the Browse placeholder with real source-scoped browse, search, and title-detail UI.
+- Discuss and plan Phase 3 before implementation, with emphasis on filters, statuses, favorites, custom lists, and update visibility.
 
 ### Blockers/Concerns
 
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
+- The Library route is now real but intentionally minimal; Phase 3 still needs the richer organization model promised in requirements.
 
 ## Deferred Items
 
@@ -77,5 +80,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed `02-01` and prepared to execute `02-02`
-Resume file: .planning/phases/02-source-browse-mvp/02-CONTEXT.md
+Stopped at: Completed Phase 2 and prepared to start Phase 3 discussion/planning
+Resume file: .planning/ROADMAP.md

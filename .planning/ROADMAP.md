@@ -13,7 +13,7 @@ FloirsMNH should be built as a vertical MVP desktop product: first establish a r
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation Shell** - establish the app shell, persistence spine, and safe Electron boundaries
-- [ ] **Phase 2: Source Browse MVP** - prove the first real online source workflows end to end
+- [x] **Phase 2: Source Browse MVP** - prove the first real online source workflows end to end
 - [ ] **Phase 3: Library Workflow** - make saved titles organized, trackable, and visibly updated
 - [ ] **Phase 4: Reader Core** - deliver the main reading experience with progress persistence and viewing modes
 - [ ] **Phase 5: Offline and Analytics** - add downloads, local imports, history, and reading-time tracking
@@ -50,8 +50,8 @@ Plans:
 
 Plans:
 - [x] 02-01: Implement the normalized source runtime and the first site adapters.
-- [ ] 02-02: Build browse/search/detail flows for supported sources in the renderer UI.
-- [ ] 02-03: Connect add-to-library behavior to the persistent library model.
+- [x] 02-02: Build browse/search/detail flows for supported sources in the renderer UI.
+- [x] 02-03: Connect add-to-library behavior to the persistent library model.
 
 ### Phase 3: Library Workflow
 **Goal:** Make the saved library useful through organization, statuses, custom lists, and update visibility.
@@ -126,7 +126,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation Shell | 3/3 | Complete | 2026-05-18 |
-| 2. Source Browse MVP | 1/3 | In progress | - |
+| 2. Source Browse MVP | 3/3 | Complete | 2026-05-18 |
 | 3. Library Workflow | 0/3 | Not started | - |
 | 4. Reader Core | 0/3 | Not started | - |
 | 5. Offline and Analytics | 0/4 | Not started | - |
