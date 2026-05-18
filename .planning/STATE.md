@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 3 of 6 (Library Workflow)
-Plan: 0 of 3 in current phase
-Status: Ready to discuss and plan
-Last activity: 2026-05-18 - Completed Phase 2 source browse and library entry MVP
+Plan: 2 of 3 in current phase
+Status: Ready to execute
+Last activity: 2026-05-18 - Completed 03-01 library organization and cover-first UI
 
-Progress: [#####-----] 34%
+Progress: [####------] 37%
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 6
-- Average duration: 20 min
-- Total execution time: 2.0 hours
+- Average duration: 21 min
+- Total execution time: 2.4 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [#####-----] 34%
 |-------|-------|-------|----------|
 | 1 | 3 | 55 min | 18 min |
 | 2 | 3 | 65 min | 22 min |
+| 3 | 1 | 24 min | 24 min |
 
 **Recent Trend:**
-- Last 5 plans: 29 min, 17 min, 28 min, 24 min, 13 min
-- Trend: Stable with UI-to-persistence integration now proven
+- Last 5 plans: 17 min, 28 min, 24 min, 13 min, 24 min
+- Trend: Stable with schema-to-UI vertical slices continuing to hold
 
 ## Accumulated Context
 
@@ -57,17 +58,22 @@ Recent decisions affecting current work:
 - 02-01 execution: Model locked chapters explicitly in source results instead of treating them as readable pages.
 - 02-02 execution: Keep browse and title details inside one route using normalized query-param state instead of adding an early dedicated title route.
 - 02-03 execution: Use the existing `library_entries` identity schema now and defer richer library display data until Phase 3 expands organization features.
+- 03-01 execution: Expand `library_entries` in place with persisted cover, status, and favorite fields rather than replacing the identity model.
+- 03-01 execution: Keep library organization mutations library-owned and available directly from the Library route.
+- 03-01 execution: Treat plugin/source bootstrap cleanup as FK-aware so referenced source rows are preserved.
 
 ### Pending Todos
 
-- Discuss and plan Phase 3 before implementation, with emphasis on filters, statuses, favorites, custom lists, and update visibility.
+- Execute `03-02` custom lists and membership management.
+- Execute `03-03` update detection, library badges, and the Updates route.
 
 ### Blockers/Concerns
 
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
-- The Library route is now real but intentionally minimal; Phase 3 still needs the richer organization model promised in requirements.
+- Custom lists and update visibility remain open inside Phase 3.
+- Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
 
 ## Deferred Items
 
@@ -80,5 +86,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed Phase 2 and prepared to start Phase 3 discussion/planning
+Stopped at: Completed 03-01 and prepared to continue Phase 3 execution
 Resume file: .planning/ROADMAP.md
