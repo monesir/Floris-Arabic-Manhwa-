@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Source Browse MVP** - prove the first real online source workflows end to end
 - [x] **Phase 3: Library Workflow** - make saved titles organized, trackable, and visibly updated
 - [x] **Phase 4: Reader Core** - deliver the main reading experience with progress persistence and viewing modes
-- [ ] **Phase 5: Offline and Analytics** - add downloads, local imports, history, and reading-time tracking
+- [x] **Phase 5: Offline and Analytics** - add downloads, local imports, history, and reading-time tracking
 - [ ] **Phase 6: Plugin Hardening and Release Readiness** - support external plugins safely and prepare the app for distribution
 
 ## Phase Details
@@ -99,8 +99,8 @@ Plans:
 Plans:
 - [x] 05-01: Implement the download job model, queue UI, and persistent download state.
 - [x] 05-02: Add download destination controls and failure/retry handling.
-- [ ] 05-03: Implement local import normalization for folders, `CBZ`, and `PDF`.
-- [ ] 05-04: Add reading history, session timing, and per-title analytics surfaces.
+- [x] 05-03: Implement local import normalization for folders, `CBZ`, and `PDF`.
+- [x] 05-04: Add reading history, session timing, and per-title analytics surfaces.
 
 ### Phase 6: Plugin Hardening and Release Readiness
 **Goal:** Safely support external plugins and harden the app for real Windows distribution.
@@ -129,5 +129,5 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | 2. Source Browse MVP | 3/3 | Complete | 2026-05-18 |
 | 3. Library Workflow | 3/3 | Complete | 2026-05-18 |
 | 4. Reader Core | 3/3 | Complete | 2026-05-18 |
-| 5. Offline and Analytics | 2/4 | In progress | - |
+| 5. Offline and Analytics | 4/4 | Complete | 2026-05-18 |
 | 6. Plugin Hardening and Release Readiness | 0/3 | Not started | - |

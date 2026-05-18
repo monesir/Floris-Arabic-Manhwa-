@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Reading from selected sources and managing a personal manhwa library must feel reliable, organized, and local-first without requiring any account or cloud dependency.
-**Current focus:** Phase 5 - Offline and Analytics
+**Current focus:** Phase 6 - Plugin Hardening and Release Readiness
 
 ## Current Position
 
-Phase: 5 of 6 (Offline and Analytics)
-Plan: 2 of 4 in current phase
-Status: Executing remaining Phase 5 plans
-Last activity: 2026-05-18 - Completed 05-02 external destination controls and retry handling
+Phase: 6 of 6 (Plugin Hardening and Release Readiness)
+Plan: 0 of 3 in current phase
+Status: Ready to discuss and plan
+Last activity: 2026-05-18 - Completed Phase 5 downloads, imports, history, and analytics
 
-Progress: [########--] 78%
+Progress: [#########-] 89%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 13
 - Average duration: 21 min
 - Total execution time: 3.1 hours
 
@@ -31,11 +31,11 @@ Progress: [########--] 78%
 | 2 | 3 | 65 min | 22 min |
 | 3 | 3 | 66 min | 22 min |
 | 4 | 3 | 41 min | 14 min |
-| 5 | 2 | 32 min | 16 min |
+| 5 | 4 | 67 min | 17 min |
 
 **Recent Trend:**
-- Last 5 plans: 13 min, 15 min, 13 min, 18 min, 14 min
-- Trend: Stable; download work continues to stay within the recent execution band despite filesystem and dialog integration
+- Last 5 plans: 13 min, 18 min, 14 min, 20 min, 15 min
+- Trend: Stable; Phase 5 stayed within the broader execution band despite added filesystem and analytics work
 
 ## Accumulated Context
 
@@ -74,11 +74,14 @@ Recent decisions affecting current work:
 - 05-01 execution: Persist download queue state in SQLite and resume interrupted `running` jobs as `pending` on app restart.
 - 05-02 execution: Treat external destination choice as an app-level preference rather than per-job ad hoc prompting.
 - 05-02 execution: Retry failed jobs by resetting the persisted job state back to `pending` and re-entering the same queue processor.
+- 05-03 execution: Route local imports through a built-in `Local Imports` source so imported content reuses the existing title/chapter model.
+- 05-03 execution: Accept PDF import into the library model even though in-reader PDF page rendering is still constrained by the current runtime bundle.
+- 05-04 execution: Track recent reading through explicit history rows and chapter-scoped reading sessions.
+- 05-04 execution: Add a defensive analytics-table bootstrap because `node:sqlite` schema creation has been inconsistent in this environment.
 
 ### Pending Todos
 
-- Execute 05-03 for local content import.
-- Execute 05-04 for reading history and per-title time analytics.
+- Discuss and plan Phase 6 with focus on external plugin runtime bounds, diagnostics UX, and release hardening.
 
 ### Blockers/Concerns
 
@@ -86,7 +89,7 @@ Recent decisions affecting current work:
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
-- Local import normalization and analytics tables still need completion in the remaining Phase 5 plans.
+- External plugin runtime safety and release readiness remain the final major delivery area.
 
 ## Deferred Items
 
@@ -99,5 +102,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed 05-02 and prepared to continue the rest of Phase 5
+Stopped at: Completed Phase 5 and prepared to start Phase 6
 Resume file: .planning/ROADMAP.md
