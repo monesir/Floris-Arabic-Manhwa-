@@ -1,22 +1,32 @@
-import { PlaceholderPage } from "@renderer/shared/PlaceholderPage";
+import { LanguageSettingsCard } from "@renderer/features/settings/LanguageSettingsCard";
+import { useLanguage } from "@renderer/features/settings/language-context";
 
 export function SettingsPage() {
+  const { copy } = useLanguage();
+
   return (
-    <PlaceholderPage
-      eyebrow="Persistence proof"
-      title="Settings will become the first real persisted flow"
-      summary="This route is intentionally present from the start because Phase 1 needs a real persisted settings path. The language switch and local read/write round-trip will land here in the next execution plan."
-      cards={[
-        { label: "Priority", value: "High in Phase 1" },
-        { label: "Real flow", value: "Language switching" },
-        { label: "Layout", value: "Stable, not mirrored" },
-      ]}
-      nextSteps={[
-        "Turn this into the persistence smoke path in plan 01-02.",
-        "Support Arabic text correctly without flipping the entire shell layout.",
-        "Keep the i18n structure easy to extend with more languages later.",
-      ]}
-      accentPills={["Settings", "i18n", "Arabic text", "Local persistence"]}
-    />
+    <section className="page">
+      <header className="page__hero">
+        <div className="page__eyebrow">{copy.settingsEyebrow}</div>
+        <h1 className="page__title">{copy.settingsTitle}</h1>
+        <p className="page__copy">{copy.settingsSummary}</p>
+        <div className="page__grid">
+          <div className="page__card">
+            <div className="page__card-label">{copy.settingsCardPersistenceLabel}</div>
+            <div className="page__card-value">{copy.settingsCardPersistenceValue}</div>
+          </div>
+          <div className="page__card">
+            <div className="page__card-label">{copy.settingsCardIpcLabel}</div>
+            <div className="page__card-value">{copy.settingsCardIpcValue}</div>
+          </div>
+          <div className="page__card">
+            <div className="page__card-label">{copy.settingsCardLayoutLabel}</div>
+            <div className="page__card-value">{copy.settingsCardLayoutValue}</div>
+          </div>
+        </div>
+      </header>
+
+      <LanguageSettingsCard />
+    </section>
   );
 }

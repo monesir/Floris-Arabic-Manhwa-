@@ -1,16 +1,16 @@
 import { NavLink } from "react-router-dom";
+import { useLanguage } from "@renderer/features/settings/language-context";
 import { navigationItems } from "@renderer/shared/navigation";
 
 export function Sidebar() {
+  const { copy } = useLanguage();
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <span className="sidebar__eyebrow">Windows-first shell</span>
-        <div className="sidebar__title">FloirsMNH</div>
-        <div className="sidebar__copy">
-          Foundation shell for a local-first manhwa desktop client with a full
-          navigation map from day one.
-        </div>
+        <span className="sidebar__eyebrow">{copy.sidebarEyebrow}</span>
+        <div className="sidebar__title">{copy.shellTitle}</div>
+        <div className="sidebar__copy">{copy.shellDescription}</div>
       </div>
 
       <nav className="sidebar__nav" aria-label="Primary">
@@ -29,10 +29,8 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        <div className="sidebar__footer-label">Phase 1 proof</div>
-        <div className="sidebar__footer-value">
-          Shell, routing, and placeholders are live.
-        </div>
+        <div className="sidebar__footer-label">{copy.sidebarFooterLabel}</div>
+        <div className="sidebar__footer-value">{copy.sidebarFooterValue}</div>
       </div>
     </aside>
   );

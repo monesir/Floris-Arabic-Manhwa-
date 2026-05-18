@@ -1,8 +1,10 @@
 import { app, BrowserWindow } from "electron";
 import { join } from "node:path";
-
-declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
-declare const MAIN_WINDOW_VITE_NAME: string;
+import { initializeDatabase } from "@db/database";
+import { applyPhaseOneSchema } from "@db/schema";
+import { registerSettingsIpc } from "@main/ipc/settings";
+import { bootstrapPluginRegistry } from "@services/plugins/plugin-registry";
+import { bootstrapSettingsState } from "@services/settings/settings-service";
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
@@ -21,16 +23,40 @@ function createMainWindow() {
     },
   });
 
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    void mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  if (process.env.ELECTRON_RENDERER_URL) {
+    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    void mainWindow.loadFile(join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    void mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
 }
 
+function scheduleSmokeExit() {
+  const timeout = Number(process.env.FLOIRSMNH_SMOKE_EXIT_MS);
+
+  if (!Number.isFinite(timeout) || timeout <= 0) {
+    return;
+  }
+
+  setTimeout(() => {
+    app.quit();
+  }, timeout);
+}
+
 app.whenReady().then(() => {
+  const userDataPath = app.getPath("userData");
+  const database = initializeDatabase(join(userDataPath, "floirsmnh.db"));
+
+  if (process.env.FLOIRSMNH_SMOKE_LOG_PATHS === "1") {
+    console.log(`FLOIRSMNH_USER_DATA=${userDataPath}`);
+  }
+
+  applyPhaseOneSchema(database);
+  bootstrapSettingsState();
+  bootstrapPluginRegistry();
+  registerSettingsIpc();
   createMainWindow();
+  scheduleSmokeExit();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -1,3 +1,8 @@
+import type {
+  AppLanguage,
+  AppSettingsSnapshot,
+} from "@contracts/settings";
+
 export {};
 
 declare module "*.css";
@@ -11,6 +16,10 @@ declare global {
         electron: string;
         node: string;
       };
+    };
+    appSettings: {
+      get: () => Promise<AppSettingsSnapshot>;
+      setLanguage: (language: AppLanguage) => Promise<AppSettingsSnapshot>;
     };
   }
 }

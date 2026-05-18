@@ -18,14 +18,21 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": ["src/renderer/src/*"]
+      "@renderer/*": ["src/renderer/src/*"],
+      "@contracts/*": ["src/shared/contracts/*"],
+      "@db/*": ["src/db/*"],
+      "@services/*": ["src/services/*"],
+      "@main/*": ["src/main/*"]
     },
     "types": ["node", "vite/client"]
   },
   "include": [
     "electron.vite.config.ts",
+    "src/db",
     "src/main",
     "src/preload",
-    "src/renderer/src"
+    "src/renderer/src",
+    "src/services",
+    "src/shared"
   ]
 }
