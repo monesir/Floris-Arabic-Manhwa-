@@ -1,0 +1,10 @@
+{
+  "name": "floirsmnh-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev": "pnpm --filter @floirsmnh/desktop dev",
+    "build": "pnpm --filter @floirsmnh/desktop build",
+    "typecheck": "pnpm --filter @floirsmnh/desktop typecheck"
+  }
+}
