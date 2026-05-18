@@ -17,6 +17,7 @@ export function bootstrapPluginRegistry(userDataPath: string) {
   const sourceRepository = new SourceRepository(database);
   const externalPlugins = discoverExternalPlugins(userDataPath);
 
+  sourceRepository.deleteByPluginId(builtInPluginRuntime.plugin.pluginId);
   pluginRepository.upsert(builtInPluginRuntime.plugin);
   for (const source of builtInPluginRuntime.sources) {
     sourceRepository.upsert(source.registry);

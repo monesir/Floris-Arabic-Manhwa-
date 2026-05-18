@@ -3,6 +3,14 @@ import type {
   AppLanguage,
   AppSettingsSnapshot,
 } from "@contracts/settings";
+import type {
+  SourceCatalogItem,
+  SourceChapterPage,
+  SourceChapterSummary,
+  SourcePagedResult,
+  SourceTitleDetails,
+  SourceTitleSummary,
+} from "@contracts/source";
 
 export {};
 
@@ -27,6 +35,20 @@ declare global {
         pluginDirectory: string;
         plugins: PluginListItem[];
       }>;
+    };
+    sourceRegistry: {
+      getCatalog: () => Promise<SourceCatalogItem[]>;
+      browse: (sourceId: string, page: number) => Promise<SourcePagedResult<SourceTitleSummary>>;
+      search: (sourceId: string, query: string, page?: number) => Promise<SourcePagedResult<SourceTitleSummary>>;
+      getTitle: (sourceId: string, titleId: string) => Promise<{
+        details: SourceTitleDetails;
+        chapters: SourceChapterSummary[];
+      }>;
+      getChapterPages: (
+        sourceId: string,
+        titleId: string,
+        chapterId: string,
+      ) => Promise<SourceChapterPage[]>;
     };
   }
 }

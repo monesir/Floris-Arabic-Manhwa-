@@ -36,6 +36,12 @@ export class SourceRepository {
       });
   }
 
+  deleteByPluginId(pluginId: string) {
+    this.database
+      .prepare("DELETE FROM source_registry WHERE plugin_id = ?")
+      .run(pluginId);
+  }
+
   listAll(): SourceRegistryRecord[] {
     const rows = this.database
       .prepare(

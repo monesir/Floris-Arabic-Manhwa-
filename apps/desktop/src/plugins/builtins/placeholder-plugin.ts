@@ -1,22 +1,29 @@
 import {
+  AZORA_SOURCE_RECORD,
   BUILT_IN_PLUGIN_RECORD,
-  PLACEHOLDER_SOURCE_METADATA,
-  PLACEHOLDER_SOURCE_RECORD,
+  OLYMPUS_SOURCE_RECORD,
 } from "@contracts/plugin";
 import { deriveTitleActions, type SourceRuntimeContract } from "@contracts/source";
+import { azoraSourceRuntime } from "@services/sources/azora-source";
+import { olympusSourceRuntime } from "@services/sources/olympus-source";
 
-export const placeholderSourceRuntime: SourceRuntimeContract = {
-  metadata: PLACEHOLDER_SOURCE_METADATA,
-  capabilities: PLACEHOLDER_SOURCE_RECORD.capabilities,
-};
+export const builtInSourceRuntimes: SourceRuntimeContract[] = [
+  azoraSourceRuntime,
+  olympusSourceRuntime,
+];
 
 export const builtInPluginRuntime = {
   plugin: BUILT_IN_PLUGIN_RECORD,
   sources: [
     {
-      registry: PLACEHOLDER_SOURCE_RECORD,
-      runtime: placeholderSourceRuntime,
-      actions: deriveTitleActions(PLACEHOLDER_SOURCE_RECORD.capabilities),
+      registry: AZORA_SOURCE_RECORD,
+      runtime: azoraSourceRuntime,
+      actions: deriveTitleActions(AZORA_SOURCE_RECORD.capabilities),
+    },
+    {
+      registry: OLYMPUS_SOURCE_RECORD,
+      runtime: olympusSourceRuntime,
+      actions: deriveTitleActions(OLYMPUS_SOURCE_RECORD.capabilities),
     },
   ],
 };

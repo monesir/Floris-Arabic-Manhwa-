@@ -57,7 +57,8 @@ export const externalPluginManifestSchema = z.object({
 export type ExternalPluginManifest = z.infer<typeof externalPluginManifestSchema>;
 
 export const BUILT_IN_PLUGIN_ID = "core.builtin";
-export const PLACEHOLDER_SOURCE_ID = "core.placeholder";
+export const AZORA_SOURCE_ID = "azora.series";
+export const OLYMPUS_SOURCE_ID = "olympus.series";
 
 export const BUILT_IN_PLUGIN_RECORD: PluginRegistryRecord = {
   pluginId: BUILT_IN_PLUGIN_ID,
@@ -68,18 +69,46 @@ export const BUILT_IN_PLUGIN_RECORD: PluginRegistryRecord = {
   failureReason: null,
 };
 
-export const PLACEHOLDER_SOURCE_RECORD: SourceRegistryRecord = {
-  sourceId: PLACEHOLDER_SOURCE_ID,
+export const AZORA_SOURCE_RECORD: SourceRegistryRecord = {
+  sourceId: AZORA_SOURCE_ID,
   pluginId: BUILT_IN_PLUGIN_ID,
-  displayName: "Placeholder Source",
-  capabilities: EMPTY_SOURCE_CAPABILITIES,
+  displayName: "Azora Manga",
+  capabilities: {
+    ...EMPTY_SOURCE_CAPABILITIES,
+    browse: true,
+    search: true,
+    title_details: true,
+    chapter_list: true,
+    chapter_pages: true,
+  },
 };
 
-export const PLACEHOLDER_SOURCE_METADATA: SourceMetadata = {
+export const OLYMPUS_SOURCE_RECORD: SourceRegistryRecord = {
+  sourceId: OLYMPUS_SOURCE_ID,
   pluginId: BUILT_IN_PLUGIN_ID,
-  sourceId: PLACEHOLDER_SOURCE_ID,
-  displayName: "Placeholder Source",
-  language: "multi",
-  baseUrl: "https://placeholder.invalid",
+  displayName: "Olympus Staff",
+  capabilities: {
+    ...EMPTY_SOURCE_CAPABILITIES,
+    browse: true,
+    search: true,
+    title_details: true,
+    chapter_list: true,
+    chapter_pages: true,
+  },
 };
 
+export const AZORA_SOURCE_METADATA: SourceMetadata = {
+  pluginId: BUILT_IN_PLUGIN_ID,
+  sourceId: AZORA_SOURCE_ID,
+  displayName: "Azora Manga",
+  language: "ar",
+  baseUrl: "https://azoramoon.com",
+};
+
+export const OLYMPUS_SOURCE_METADATA: SourceMetadata = {
+  pluginId: BUILT_IN_PLUGIN_ID,
+  sourceId: OLYMPUS_SOURCE_ID,
+  displayName: "Olympus Staff",
+  language: "ar",
+  baseUrl: "https://olympustaff.com",
+};
