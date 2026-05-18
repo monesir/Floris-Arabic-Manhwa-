@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Reading from selected sources and managing a personal manhwa library must feel reliable, organized, and local-first without requiring any account or cloud dependency.
-**Current focus:** Phase 4 - Reader Core
+**Current focus:** Phase 5 - Offline and Analytics
 
 ## Current Position
 
-Phase: 4 of 6 (Reader Core)
-Plan: 0 of 3 in current phase
+Phase: 5 of 6 (Offline and Analytics)
+Plan: 0 of 4 in current phase
 Status: Ready to discuss and plan
-Last activity: 2026-05-18 - Completed Phase 3 library workflow including tracked updates
+Last activity: 2026-05-18 - Completed Phase 4 reader core including resume persistence
 
-Progress: [#####-----] 50%
+Progress: [######----] 67%
 
 ## Performance Metrics
 
@@ -30,10 +30,11 @@ Progress: [#####-----] 50%
 | 1 | 3 | 55 min | 18 min |
 | 2 | 3 | 65 min | 22 min |
 | 3 | 3 | 66 min | 22 min |
+| 4 | 3 | 41 min | 14 min |
 
 **Recent Trend:**
-- Last 5 plans: 24 min, 13 min, 24 min, 23 min, 19 min
-- Trend: Stable with end-to-end vertical slices completing whole phases
+- Last 5 plans: 23 min, 19 min, 13 min, 15 min, 13 min
+- Trend: Stable with reader work completing faster than earlier infrastructure-heavy phases
 
 ## Accumulated Context
 
@@ -65,18 +66,21 @@ Recent decisions affecting current work:
 - 03-02 execution: Keep list filtering and membership management inside the Library route rather than branching into a separate screen.
 - 03-03 execution: Keep tracked update state in a separate table so refresh metadata does not distort the base library entry model.
 - 03-03 execution: Initialize update baselines on first refresh instead of marking the entire backlog as new.
+- 04-01 execution: Add a dedicated `/reader` route with its own IPC-backed state rather than embedding reader behavior inside browse.
+- 04-02 execution: Treat `RTL` as a paged reader mode while keeping app-level layout direction stable.
+- 04-03 execution: Persist progress by `source_id + source_title_id` with optional library linkage and use it to power `Continue`.
 
 ### Pending Todos
 
-- Discuss and plan Phase 4 with focus on reader layout, chapter navigation, and progress persistence.
+- Discuss and plan Phase 5 with focus on downloads, imports, history, and reading-time analytics.
 
 ### Blockers/Concerns
 
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
-- Reader mode and progress semantics still need product decisions before Phase 4 execution.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
+- Download destination policy and local import normalization still need concrete execution choices in Phase 5.
 
 ## Deferred Items
 
@@ -89,5 +93,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed Phase 3 and prepared to start Phase 4 discussion/planning
+Stopped at: Completed Phase 4 and prepared to start Phase 5 discussion/planning
 Resume file: .planning/ROADMAP.md
