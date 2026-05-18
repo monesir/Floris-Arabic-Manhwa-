@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Reading from selected sources and managing a personal manhwa library must feel reliable, organized, and local-first without requiring any account or cloud dependency.
-**Current focus:** Phase 1 - Foundation Shell
+**Current focus:** Phase 2 - Source Browse MVP
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation Shell)
-Plan: 3 of 3 in current phase
-Status: Ready to execute
-Last activity: 2026-05-18 - Completed 01-02 persistence spine and language settings flow
+Phase: 2 of 6 (Source Browse MVP)
+Plan: 0 of 3 in current phase
+Status: Ready to discuss and plan
+Last activity: 2026-05-18 - Completed Phase 1 Foundation Shell
 
-Progress: [##--------] 12%
+Progress: [###-------] 18%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 19 min
-- Total execution time: 0.6 hours
+- Total plans completed: 3
+- Average duration: 18 min
+- Total execution time: 0.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 2 | 38 min | 19 min |
+| 1 | 3 | 55 min | 18 min |
 
 **Recent Trend:**
-- Last 5 plans: 9 min, 29 min
-- Trend: Stable with heavier integration work
+- Last 5 plans: 9 min, 29 min, 17 min
+- Trend: Stable with moderate integration complexity
 
 ## Accumulated Context
 
@@ -50,6 +50,8 @@ Recent decisions affecting current work:
 - 01-01 execution: Keep the full navigation map visible now through intentional placeholder pages instead of hiding later routes.
 - 01-02 execution: Use built-in `node:sqlite` for the local database because the native `better-sqlite3` path failed against the current Electron runtime.
 - 01-02 execution: Use `process.env.ELECTRON_RENDERER_URL` and `../renderer/index.html` as the main-window loading path expected by `electron-vite@5`.
+- 01-03 execution: Use a capability-driven shared source contract and registry-backed Plugins page.
+- 01-03 execution: Discover external plugins from the app user-data `plugins` directory while keeping external runtime execution deferred.
 
 ### Pending Todos
 
@@ -58,8 +60,8 @@ None yet.
 ### Blockers/Concerns
 
 - Source extraction details for `azoramoon.com` and `olympustaff.com` still need phase-level validation before implementation.
-- External plugin trust boundaries need tighter planning before runtime loading is implemented.
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
+- External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
 
 ## Deferred Items
 
@@ -72,5 +74,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed 01-02 and created its execution summary
+Stopped at: Completed Phase 1 and prepared to begin Phase 2 planning
 Resume file: .planning/phases/01-foundation-shell/01-CONTEXT.md

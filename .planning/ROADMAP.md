@@ -12,7 +12,7 @@ FloirsMNH should be built as a vertical MVP desktop product: first establish a r
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation Shell** - establish the app shell, persistence spine, and safe Electron boundaries
+- [x] **Phase 1: Foundation Shell** - establish the app shell, persistence spine, and safe Electron boundaries
 - [ ] **Phase 2: Source Browse MVP** - prove the first real online source workflows end to end
 - [ ] **Phase 3: Library Workflow** - make saved titles organized, trackable, and visibly updated
 - [ ] **Phase 4: Reader Core** - deliver the main reading experience with progress persistence and viewing modes
@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01: Bootstrap the Electron, React, and TypeScript app shell with the core route/page structure.
 - [x] 01-02: Establish local persistence, schema/repository foundations, and settings storage.
-- [ ] 01-03: Implement preload/IPC boundaries plus the built-in source adapter contract skeleton.
+- [x] 01-03: Implement preload/IPC boundaries plus the built-in source adapter contract skeleton.
 
 ### Phase 2: Source Browse MVP
 **Goal:** Let the user browse initial Arabic sources, search them, inspect title details, and add titles to the local library.
@@ -125,7 +125,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation Shell | 2/3 | In progress | - |
+| 1. Foundation Shell | 3/3 | Complete | 2026-05-18 |
 | 2. Source Browse MVP | 0/3 | Not started | - |
 | 3. Library Workflow | 0/3 | Not started | - |
 | 4. Reader Core | 0/3 | Not started | - |
