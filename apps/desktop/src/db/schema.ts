@@ -72,6 +72,18 @@ const PHASE_ONE_SCHEMA = `
     last_detected_at TEXT,
     FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS reading_progress (
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    library_entry_id TEXT,
+    last_read_chapter_id TEXT,
+    last_read_page_index INTEGER NOT NULL DEFAULT 0,
+    last_read_scroll_progress REAL NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (source_id, source_title_id),
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
 `;
 
 function ensureColumn(

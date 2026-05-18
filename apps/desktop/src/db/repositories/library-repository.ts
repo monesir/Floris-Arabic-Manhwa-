@@ -177,6 +177,19 @@ export class LibraryRepository {
     return row ? mapEntry(row) : null;
   }
 
+  getBySourceIdentity(sourceId: string, sourceTitleId: string) {
+    const row = this.database
+      .prepare(
+        `
+          ${SELECT_LIBRARY_ENTRY}
+          WHERE source_id = ? AND source_title_id = ?
+        `,
+      )
+      .get(sourceId, sourceTitleId) as Parameters<typeof mapEntry>[0] | undefined;
+
+    return row ? mapEntry(row) : null;
+  }
+
   listAll(query: LibraryListQuery = {}) {
     const whereParts: string[] = [];
     const params: Record<string, string | number> = {};

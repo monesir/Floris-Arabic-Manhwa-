@@ -13,7 +13,8 @@ import {
   searchSourceTitles,
 } from "@renderer/shared/source-registry";
 import { addLibraryEntry, listLibraryEntries } from "@renderer/shared/library-store";
-import { useSearchParams } from "react-router-dom";
+import { getReaderState } from "@renderer/shared/reader-store";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 type BrowseResultsState = {
   items: SourceTitleSummary[];
@@ -53,6 +54,8 @@ export function BrowseWorkspace() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [libraryNotice, setLibraryNotice] = useState<string | null>(null);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
+  const [readerState, setReaderState] = useState<{ progressChapterId: string | null; libraryEntryId: string | null } | null>(null);
+  const navigate = useNavigate();
 
   const sourceId = searchParams.get("source");
   const activeQuery = searchParams.get("query") ?? "";
@@ -157,6 +160,29 @@ export function BrowseWorkspace() {
       });
   }, [activeSource?.metadata.sourceId, titleId]);
 
+  useEffect(() => {
+    if (!activeSource || !titleId) {
+      setReaderState(null);
+      return;
+    }
+
+    const libraryEntryId = libraryState[`${activeSource.metadata.sourceId}:${titleId}`] ?? null;
+
+    void getReaderState(activeSource.metadata.sourceId, titleId, libraryEntryId)
+      .then((snapshot) => {
+        setReaderState({
+          progressChapterId: snapshot.progress?.lastReadChapterId ?? null,
+          libraryEntryId: snapshot.libraryEntryId,
+        });
+      })
+      .catch(() => {
+        setReaderState({
+          progressChapterId: null,
+          libraryEntryId,
+        });
+      });
+  }, [activeSource?.metadata.sourceId, libraryState, titleId]);
+
   function updateParams(patch: Record<string, string | null>, replace = false) {
     const nextParams = new URLSearchParams(searchParams);
 
@@ -233,6 +259,10 @@ export function BrowseWorkspace() {
           ...current,
           [`${entry.sourceId}:${entry.sourceTitleId}`]: entry.libraryEntryId,
         }));
+        setReaderState((current) => ({
+          progressChapterId: current?.progressChapterId ?? null,
+          libraryEntryId: entry.libraryEntryId,
+        }));
         setLibraryNotice(`Saved "${entry.titleName}" to the local library.`);
       })
       .catch((error: unknown) => {
@@ -242,6 +272,29 @@ export function BrowseWorkspace() {
         setIsSavingToLibrary(false);
       });
   }
+
+  function handleOpenReader(chapterId: string | null) {
+    if (!activeSource || !detail || !chapterId) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams({
+      source: activeSource.metadata.sourceId,
+      title: detail.details.titleId,
+      chapter: chapterId,
+    });
+
+    if (readerState?.libraryEntryId) {
+      nextParams.set("libraryEntry", readerState.libraryEntryId);
+    }
+
+    navigate(`/reader?${nextParams.toString()}`);
+  }
+
+  const defaultReadableChapterId = detail
+    ? detail.chapters.filter((chapter) => chapter.availability === "readable").at(-1)?.chapterId ?? null
+    : null;
+  const continueChapterId = readerState?.progressChapterId ?? defaultReadableChapterId;
 
   return (
     <div className="browse-page">
@@ -442,6 +495,22 @@ export function BrowseWorkspace() {
                   <div className="browse-detail-card__actions">
                     <button
                       type="button"
+                      className="browse-search__button browse-search__button--ghost"
+                      disabled={!defaultReadableChapterId}
+                      onClick={() => handleOpenReader(defaultReadableChapterId)}
+                    >
+                      Read
+                    </button>
+                    <button
+                      type="button"
+                      className="browse-search__button browse-search__button--ghost"
+                      disabled={!continueChapterId}
+                      onClick={() => handleOpenReader(continueChapterId)}
+                    >
+                      Continue
+                    </button>
+                    <button
+                      type="button"
                       className="browse-search__button"
                       onClick={handleAddToLibrary}
                       disabled={
@@ -483,6 +552,10 @@ export function BrowseWorkspace() {
                       <strong>
                         {detail.chapters.filter((chapter) => chapter.availability === "readable").length}
                       </strong>
+                    </div>
+                    <div>
+                      <span className="browse-detail-card__fact-label">Resume</span>
+                      <strong>{readerState?.progressChapterId ?? "No saved progress"}</strong>
                     </div>
                   </div>
                 </div>
@@ -527,7 +600,17 @@ export function BrowseWorkspace() {
                         </span>
                       </div>
                       <div>
-                        <span>{chapter.releaseDate ? new Date(chapter.releaseDate).toLocaleDateString() : "Unknown"}</span>
+                        <div className="browse-chapter-row__actions">
+                          <span>{chapter.releaseDate ? new Date(chapter.releaseDate).toLocaleDateString() : "Unknown"}</span>
+                          <button
+                            type="button"
+                            className="browse-search__button browse-search__button--ghost browse-search__button--inline"
+                            disabled={chapter.availability !== "readable"}
+                            onClick={() => handleOpenReader(chapter.chapterId)}
+                          >
+                            Read
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

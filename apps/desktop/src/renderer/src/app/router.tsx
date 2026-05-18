@@ -5,6 +5,7 @@ import { DownloadsPage } from "@renderer/pages/DownloadsPage";
 import { HistoryPage } from "@renderer/pages/HistoryPage";
 import { LibraryPage } from "@renderer/pages/LibraryPage";
 import { PluginsPage } from "@renderer/pages/PluginsPage";
+import { ReaderPage } from "@renderer/pages/ReaderPage";
 import { SettingsPage } from "@renderer/pages/SettingsPage";
 import { UpdatesPage } from "@renderer/pages/UpdatesPage";
 
@@ -19,6 +20,7 @@ export const router = createHashRouter([
       { path: "/updates", element: <UpdatesPage /> },
       { path: "/history", element: <HistoryPage /> },
       { path: "/downloads", element: <DownloadsPage /> },
+      { path: "/reader", element: <ReaderPage /> },
       { path: "/settings", element: <SettingsPage /> },
       { path: "/plugins", element: <PluginsPage /> },
     ],

@@ -10,6 +10,12 @@ import type {
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
+  ReaderPreferences,
+  ReaderStateSnapshot,
+  ReadingProgressSnapshot,
+  SaveReadingProgressInput,
+} from "@contracts/reader";
+import type {
   AppLanguage,
   AppSettingsSnapshot,
 } from "@contracts/settings";
@@ -79,6 +85,15 @@ declare global {
         titleId: string,
         chapterId: string,
       ) => Promise<SourceChapterPage[]>;
+    };
+    readerStore: {
+      getState: (
+        sourceId: string,
+        sourceTitleId: string,
+        libraryEntryId?: string | null,
+      ) => Promise<ReaderStateSnapshot>;
+      updatePreferences: (preferences: ReaderPreferences) => Promise<ReaderPreferences>;
+      saveProgress: (input: SaveReadingProgressInput) => Promise<ReadingProgressSnapshot | null>;
     };
   }
 }

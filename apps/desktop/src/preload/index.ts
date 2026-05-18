@@ -11,6 +11,12 @@ import type {
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
+  ReaderPreferences,
+  ReaderStateSnapshot,
+  ReadingProgressSnapshot,
+  SaveReadingProgressInput,
+} from "@contracts/reader";
+import type {
   AppLanguage,
   AppSettingsSnapshot,
 } from "@contracts/settings";
@@ -129,5 +135,22 @@ contextBridge.exposeInMainWorld("sourceRegistry", {
       titleId,
       chapterId,
     ) as Promise<SourceChapterPage[]>;
+  },
+});
+
+contextBridge.exposeInMainWorld("readerStore", {
+  getState(sourceId: string, sourceTitleId: string, libraryEntryId?: string | null) {
+    return ipcRenderer.invoke(
+      "reader:get-state",
+      sourceId,
+      sourceTitleId,
+      libraryEntryId,
+    ) as Promise<ReaderStateSnapshot>;
+  },
+  updatePreferences(preferences: ReaderPreferences) {
+    return ipcRenderer.invoke("reader:update-preferences", preferences) as Promise<ReaderPreferences>;
+  },
+  saveProgress(input: SaveReadingProgressInput) {
+    return ipcRenderer.invoke("reader:save-progress", input) as Promise<ReadingProgressSnapshot | null>;
   },
 });

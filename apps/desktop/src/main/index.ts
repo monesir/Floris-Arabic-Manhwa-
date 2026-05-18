@@ -4,6 +4,7 @@ import { initializeDatabase } from "@db/database";
 import { applyPhaseOneSchema } from "@db/schema";
 import { registerLibraryIpc } from "@main/ipc/library";
 import { registerPluginIpc } from "@main/ipc/plugins";
+import { registerReaderIpc } from "@main/ipc/reader";
 import { registerSettingsIpc } from "@main/ipc/settings";
 import { registerSourceIpc } from "@main/ipc/sources";
 import { bootstrapPluginRegistry } from "@services/plugins/plugin-registry";
@@ -58,6 +59,7 @@ app.whenReady().then(() => {
   bootstrapSettingsState();
   bootstrapPluginRegistry(userDataPath);
   registerLibraryIpc();
+  registerReaderIpc();
   registerSettingsIpc();
   registerPluginIpc(userDataPath);
   registerSourceIpc();
