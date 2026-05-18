@@ -12,6 +12,7 @@ import {
   getSourceTitle,
   searchSourceTitles,
 } from "@renderer/shared/source-registry";
+import { enqueueDownload } from "@renderer/shared/downloads-store";
 import { addLibraryEntry, listLibraryEntries } from "@renderer/shared/library-store";
 import { getReaderState } from "@renderer/shared/reader-store";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -53,6 +54,7 @@ export function BrowseWorkspace() {
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [libraryNotice, setLibraryNotice] = useState<string | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [readerState, setReaderState] = useState<{ progressChapterId: string | null; libraryEntryId: string | null } | null>(null);
   const navigate = useNavigate();
@@ -270,6 +272,33 @@ export function BrowseWorkspace() {
       })
       .finally(() => {
         setIsSavingToLibrary(false);
+      });
+  }
+
+  function handleQueueChapterDownload(chapterId: string, chapterTitle: string) {
+    if (!activeSource || !detail) {
+      return;
+    }
+
+    setDownloadNotice(null);
+
+    void enqueueDownload({
+      sourceId: activeSource.metadata.sourceId,
+      sourceTitleId: detail.details.titleId,
+      titleName: detail.details.name,
+      chapterId,
+      chapterTitle,
+      coverUrl: detail.details.coverUrl,
+    })
+      .then((job) => {
+        if (!job) {
+          throw new Error("Download job was not created.");
+        }
+
+        setDownloadNotice(`Queued "${chapterTitle}" for offline download.`);
+      })
+      .catch((error: unknown) => {
+        setDownloadNotice(error instanceof Error ? error.message : "Failed to queue chapter download.");
       });
   }
 
@@ -538,6 +567,7 @@ export function BrowseWorkspace() {
                     </a>
                   </div>
                   {libraryNotice ? <p className="browse-message">{libraryNotice}</p> : null}
+                  {downloadNotice ? <p className="browse-message">{downloadNotice}</p> : null}
                   <div className="browse-detail-card__facts">
                     <div>
                       <span className="browse-detail-card__fact-label">Language</span>
@@ -602,14 +632,24 @@ export function BrowseWorkspace() {
                       <div>
                         <div className="browse-chapter-row__actions">
                           <span>{chapter.releaseDate ? new Date(chapter.releaseDate).toLocaleDateString() : "Unknown"}</span>
-                          <button
-                            type="button"
-                            className="browse-search__button browse-search__button--ghost browse-search__button--inline"
-                            disabled={chapter.availability !== "readable"}
-                            onClick={() => handleOpenReader(chapter.chapterId)}
-                          >
-                            Read
-                          </button>
+                          <div className="browse-chapter-row__actions-inline">
+                            <button
+                              type="button"
+                              className="browse-search__button browse-search__button--ghost browse-search__button--inline"
+                              disabled={chapter.availability !== "readable"}
+                              onClick={() => handleOpenReader(chapter.chapterId)}
+                            >
+                              Read
+                            </button>
+                            <button
+                              type="button"
+                              className="browse-search__button browse-search__button--ghost browse-search__button--inline"
+                              disabled={chapter.availability !== "readable"}
+                              onClick={() => handleQueueChapterDownload(chapter.chapterId, chapter.title)}
+                            >
+                              Download
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -84,6 +84,60 @@ const PHASE_ONE_SCHEMA = `
     PRIMARY KEY (source_id, source_title_id),
     FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
   );
+
+  CREATE TABLE IF NOT EXISTS download_jobs (
+    job_id TEXT PRIMARY KEY,
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    title_name TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    cover_url TEXT,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'running', 'paused', 'completed', 'failed')),
+    destination_type TEXT NOT NULL CHECK(destination_type IN ('app_managed', 'external')),
+    destination_path TEXT NOT NULL,
+    total_files INTEGER NOT NULL DEFAULT 0,
+    completed_files INTEGER NOT NULL DEFAULT 0,
+    error_message TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    completed_at TEXT
+  );
+`;
+
+const READING_PROGRESS_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS reading_progress (
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    library_entry_id TEXT,
+    last_read_chapter_id TEXT,
+    last_read_page_index INTEGER NOT NULL DEFAULT 0,
+    last_read_scroll_progress REAL NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (source_id, source_title_id),
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
+`;
+
+const DOWNLOAD_JOBS_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS download_jobs (
+    job_id TEXT PRIMARY KEY,
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    title_name TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    cover_url TEXT,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'running', 'paused', 'completed', 'failed')),
+    destination_type TEXT NOT NULL CHECK(destination_type IN ('app_managed', 'external')),
+    destination_path TEXT NOT NULL,
+    total_files INTEGER NOT NULL DEFAULT 0,
+    completed_files INTEGER NOT NULL DEFAULT 0,
+    error_message TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    completed_at TEXT
+  );
 `;
 
 function ensureColumn(
@@ -105,6 +159,8 @@ function ensureColumn(
 
 export function applyPhaseOneSchema(database: DatabaseSync) {
   database.exec(PHASE_ONE_SCHEMA);
+  database.exec(READING_PROGRESS_SCHEMA);
+  database.exec(DOWNLOAD_JOBS_SCHEMA);
   ensureColumn(database, "library_entries", "cover_url", "TEXT");
   ensureColumn(
     database,

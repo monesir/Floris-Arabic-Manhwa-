@@ -10,6 +10,11 @@ import type {
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
+  DownloadJob,
+  DownloadQueueSummary,
+  EnqueueDownloadInput,
+} from "@contracts/downloads";
+import type {
   ReaderPreferences,
   ReaderStateSnapshot,
   ReadingProgressSnapshot,
@@ -94,6 +99,11 @@ declare global {
       ) => Promise<ReaderStateSnapshot>;
       updatePreferences: (preferences: ReaderPreferences) => Promise<ReaderPreferences>;
       saveProgress: (input: SaveReadingProgressInput) => Promise<ReadingProgressSnapshot | null>;
+    };
+    downloadsStore: {
+      enqueue: (input: EnqueueDownloadInput) => Promise<DownloadJob | null>;
+      list: () => Promise<DownloadJob[]>;
+      getSummary: () => Promise<DownloadQueueSummary>;
     };
   }
 }

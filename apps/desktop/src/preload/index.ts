@@ -17,6 +17,11 @@ import type {
   SaveReadingProgressInput,
 } from "@contracts/reader";
 import type {
+  DownloadJob,
+  DownloadQueueSummary,
+  EnqueueDownloadInput,
+} from "@contracts/downloads";
+import type {
   AppLanguage,
   AppSettingsSnapshot,
 } from "@contracts/settings";
@@ -152,5 +157,17 @@ contextBridge.exposeInMainWorld("readerStore", {
   },
   saveProgress(input: SaveReadingProgressInput) {
     return ipcRenderer.invoke("reader:save-progress", input) as Promise<ReadingProgressSnapshot | null>;
+  },
+});
+
+contextBridge.exposeInMainWorld("downloadsStore", {
+  enqueue(input: EnqueueDownloadInput) {
+    return ipcRenderer.invoke("downloads:enqueue", input) as Promise<DownloadJob | null>;
+  },
+  list() {
+    return ipcRenderer.invoke("downloads:list") as Promise<DownloadJob[]>;
+  },
+  getSummary() {
+    return ipcRenderer.invoke("downloads:get-summary") as Promise<DownloadQueueSummary>;
   },
 });

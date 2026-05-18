@@ -1,21 +1,114 @@
-import { PlaceholderPage } from "@renderer/shared/PlaceholderPage";
+import { useEffect, useState } from "react";
+import type { DownloadJob, DownloadQueueSummary } from "@contracts/downloads";
+import {
+  getDownloadQueueSummary,
+  listDownloadJobs,
+} from "@renderer/shared/downloads-store";
 
 export function DownloadsPage() {
+  const [jobs, setJobs] = useState<DownloadJob[]>([]);
+  const [summary, setSummary] = useState<DownloadQueueSummary | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [error, setError] = useState<string | null>(null);
+
+  function refreshDownloads() {
+    setStatus("loading");
+    setError(null);
+
+    void Promise.all([listDownloadJobs(), getDownloadQueueSummary()])
+      .then(([nextJobs, nextSummary]) => {
+        setJobs(nextJobs);
+        setSummary(nextSummary);
+        setStatus("ready");
+      })
+      .catch((nextError: unknown) => {
+        setStatus("error");
+        setError(nextError instanceof Error ? nextError.message : "Failed to load download queue.");
+      });
+  }
+
+  useEffect(() => {
+    refreshDownloads();
+  }, []);
+
   return (
-    <PlaceholderPage
-      eyebrow="Offline lane"
-      title="Downloads is visible before the queue exists"
-      summary="This page exists in the shell because offline handling is a core promise of the app. Phase 1 does not fake queue data; it simply holds the route and prepares the architecture for the later download subsystem."
-      cards={[
-        { label: "Future owner", value: "Download manager" },
-        { label: "Execution", value: "Deferred" },
-        { label: "Persistence", value: "Later tables" },
-      ]}
-      nextSteps={[
-        "Preserve the route now so later queue UX lands in a stable shell.",
-        "Real jobs, retries, and destinations come after source and reader foundations.",
-      ]}
-      accentPills={["Downloads", "Queue", "Offline reading"]}
-    />
+    <section className="page">
+      <header className="page__header page__header--split">
+        <div>
+          <div className="page__eyebrow">Offline lane</div>
+          <h1 className="page__title page__title--compact">Downloads</h1>
+          <p className="page__copy">
+            App-managed chapter downloads now persist locally and materialize into the user-data downloads directory.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="browse-search__button"
+          onClick={refreshDownloads}
+        >
+          Refresh
+        </button>
+      </header>
+
+      <div className="page__grid">
+        <div className="page__card">
+          <div className="page__card-label">Total jobs</div>
+          <div className="page__card-value">{summary?.total ?? "--"}</div>
+        </div>
+        <div className="page__card">
+          <div className="page__card-label">Pending / running</div>
+          <div className="page__card-value">
+            {(summary?.pending ?? 0) + (summary?.running ?? 0)}
+          </div>
+        </div>
+        <div className="page__card">
+          <div className="page__card-label">Completed / failed</div>
+          <div className="page__card-value">
+            {(summary?.completed ?? 0)} / {(summary?.failed ?? 0)}
+          </div>
+        </div>
+      </div>
+
+      <section className="page__panel">
+        {status === "loading" ? <p className="browse-message">Loading download queue...</p> : null}
+        {error ? <p className="browse-message browse-message--error">{error}</p> : null}
+        {status === "ready" && jobs.length === 0 ? (
+          <p className="browse-message">
+            No chapter downloads have been queued yet. Use the title details page to enqueue readable chapters.
+          </p>
+        ) : null}
+
+        <div className="updates-list">
+          {jobs.map((job) => (
+            <article className="updates-card" key={job.jobId}>
+              <div className="updates-card__cover-wrap">
+                {job.coverUrl ? (
+                  <img className="updates-card__cover" src={job.coverUrl} alt={job.titleName} />
+                ) : (
+                  <div className="updates-card__cover updates-card__cover--empty">No cover</div>
+                )}
+              </div>
+              <div className="updates-card__body">
+                <div className="updates-card__topline">
+                  <span className="browse-pill">{job.status}</span>
+                  <span className="page__pill">
+                    {job.completedFiles}/{job.totalFiles || "--"}
+                  </span>
+                </div>
+                <h2 className="updates-card__title">{job.titleName}</h2>
+                <p className="updates-card__meta">Chapter: {job.chapterTitle}</p>
+                <p className="updates-card__meta">Destination: {job.destinationPath}</p>
+                <p className="updates-card__meta">
+                  Updated: {new Date(job.updatedAt).toLocaleString()}
+                </p>
+                {job.errorMessage ? (
+                  <p className="browse-message browse-message--error">{job.errorMessage}</p>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
   );
 }

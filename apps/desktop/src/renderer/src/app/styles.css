@@ -738,6 +738,12 @@ select {
   gap: 0.75rem;
 }
 
+.browse-chapter-row__actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .reader-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

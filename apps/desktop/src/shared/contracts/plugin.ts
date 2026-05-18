@@ -80,6 +80,7 @@ export const AZORA_SOURCE_RECORD: SourceRegistryRecord = {
     title_details: true,
     chapter_list: true,
     chapter_pages: true,
+    downloads: true,
   },
 };
 
@@ -94,6 +95,7 @@ export const OLYMPUS_SOURCE_RECORD: SourceRegistryRecord = {
     title_details: true,
     chapter_list: true,
     chapter_pages: true,
+    downloads: true,
   },
 };
 
