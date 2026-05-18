@@ -2,13 +2,17 @@ import { app, BrowserWindow } from "electron";
 import { join } from "node:path";
 import { initializeDatabase } from "@db/database";
 import { applyPhaseOneSchema } from "@db/schema";
+import { registerAnalyticsIpc } from "@main/ipc/analytics";
 import { registerDownloadsIpc } from "@main/ipc/downloads";
+import { registerImportsIpc } from "@main/ipc/imports";
 import { registerLibraryIpc } from "@main/ipc/library";
 import { registerPluginIpc } from "@main/ipc/plugins";
 import { registerReaderIpc } from "@main/ipc/reader";
 import { registerSettingsIpc } from "@main/ipc/settings";
 import { registerSourceIpc } from "@main/ipc/sources";
 import { initializeDownloadService } from "@services/downloads/download-service";
+import { initializeImportService } from "@services/imports/import-service";
+import { bootstrapReaderAnalytics } from "@services/reader/reader-service";
 import { bootstrapPluginRegistry } from "@services/plugins/plugin-registry";
 import { bootstrapSettingsState } from "@services/settings/settings-service";
 
@@ -59,9 +63,13 @@ app.whenReady().then(() => {
 
   applyPhaseOneSchema(database);
   bootstrapSettingsState();
+  bootstrapReaderAnalytics();
   bootstrapPluginRegistry(userDataPath);
   initializeDownloadService(userDataPath);
+  initializeImportService(userDataPath);
+  registerAnalyticsIpc();
   registerDownloadsIpc();
+  registerImportsIpc();
   registerLibraryIpc();
   registerReaderIpc();
   registerSettingsIpc();

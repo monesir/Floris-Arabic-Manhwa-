@@ -15,6 +15,7 @@ import type { SourceChapterSummary, SourceTitleDetails } from "@contracts/source
 import {
   DEFAULT_READER_PREFERENCES,
 } from "@contracts/reader";
+import { endReaderSession, startReaderSession } from "@renderer/shared/analytics-store";
 import { getReaderState, saveReadingProgress, updateReaderPreferences } from "@renderer/shared/reader-store";
 import { getSourceChapterPages, getSourceTitle } from "@renderer/shared/source-registry";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -110,6 +111,7 @@ export function ReaderPage() {
   const pageElementRefs = useRef<Record<number, HTMLImageElement | null>>({});
   const progressSaveTimeoutRef = useRef<number | null>(null);
   const preferencesSaveTimeoutRef = useRef<number | null>(null);
+  const activeSessionIdRef = useRef<string | null>(null);
 
   const sourceId = searchParams.get("source");
   const sourceTitleId = searchParams.get("title");
@@ -350,6 +352,49 @@ export function ReaderPage() {
 
     scheduleProgressSave(boundedPageIndex, 0);
   }, [boundedPageIndex, currentChapterId, isPagedMode, pageStatus]);
+
+  useEffect(() => {
+    if (!sourceId || !sourceTitleId || !currentChapterId || !titleState) {
+      return;
+    }
+
+    const activeChapter = titleState.chapters.find((chapter) => chapter.chapterId === currentChapterId);
+    if (!activeChapter) {
+      return;
+    }
+
+    let isDisposed = false;
+
+    void startReaderSession({
+      sourceId,
+      sourceTitleId,
+      libraryEntryId: readerState?.libraryEntryId ?? explicitLibraryEntryId ?? null,
+      titleName: titleState.details.name,
+      chapterId: currentChapterId,
+      chapterTitle: activeChapter.title,
+    }).then((sessionId) => {
+      if (!isDisposed) {
+        activeSessionIdRef.current = sessionId;
+      }
+    });
+
+    return () => {
+      isDisposed = true;
+      const sessionId = activeSessionIdRef.current;
+      activeSessionIdRef.current = null;
+
+      if (sessionId) {
+        void endReaderSession(sessionId);
+      }
+    };
+  }, [
+    currentChapterId,
+    explicitLibraryEntryId,
+    readerState?.libraryEntryId,
+    sourceId,
+    sourceTitleId,
+    titleState,
+  ]);
 
   useEffect(() => {
     if (!isPagedMode) {

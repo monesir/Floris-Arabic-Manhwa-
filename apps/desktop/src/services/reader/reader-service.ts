@@ -1,4 +1,5 @@
 import { getDatabase } from "@db/database";
+import { AnalyticsRepository } from "@db/repositories/analytics-repository";
 import { LibraryRepository } from "@db/repositories/library-repository";
 import { ReadingProgressRepository } from "@db/repositories/reading-progress-repository";
 import { SettingsRepository } from "@db/repositories/settings-repository";
@@ -23,9 +24,43 @@ function getRepositories() {
 
   return {
     libraryRepository: new LibraryRepository(database),
+    analyticsRepository: new AnalyticsRepository(database),
     progressRepository: new ReadingProgressRepository(database),
     settingsRepository: new SettingsRepository(database),
   };
+}
+
+function ensureAnalyticsTables() {
+  const database = getDatabase();
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS reading_history (
+      history_id TEXT PRIMARY KEY,
+      library_entry_id TEXT,
+      source_id TEXT NOT NULL,
+      source_title_id TEXT NOT NULL,
+      title_name TEXT NOT NULL,
+      chapter_id TEXT NOT NULL,
+      chapter_title TEXT NOT NULL,
+      opened_at TEXT NOT NULL,
+      FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS reading_sessions (
+      session_id TEXT PRIMARY KEY,
+      library_entry_id TEXT,
+      source_id TEXT NOT NULL,
+      source_title_id TEXT NOT NULL,
+      title_name TEXT NOT NULL,
+      chapter_id TEXT NOT NULL,
+      chapter_title TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      duration_seconds INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+    );
+  `);
 }
 
 function readPreferences(repository: SettingsRepository): ReaderPreferences {
@@ -96,4 +131,48 @@ export function saveReadingProgress(input: SaveReadingProgressInput) {
     lastReadScrollProgress: parsedInput.scrollProgress,
     updatedAt: timestamp,
   });
+}
+
+export function startReadingSession(input: {
+  sourceId: string;
+  sourceTitleId: string;
+  libraryEntryId?: string | null;
+  titleName: string;
+  chapterId: string;
+  chapterTitle: string;
+}) {
+  const { libraryRepository, analyticsRepository } = getRepositories();
+  const linkedLibraryEntry =
+    input.libraryEntryId
+      ? libraryRepository.getById(input.libraryEntryId)
+      : libraryRepository.getBySourceIdentity(input.sourceId, input.sourceTitleId);
+
+  analyticsRepository.logHistory({
+    libraryEntryId: linkedLibraryEntry?.libraryEntryId ?? input.libraryEntryId ?? null,
+    sourceId: input.sourceId,
+    sourceTitleId: input.sourceTitleId,
+    titleName: input.titleName,
+    chapterId: input.chapterId,
+    chapterTitle: input.chapterTitle,
+  });
+
+  return analyticsRepository.startSession({
+    libraryEntryId: linkedLibraryEntry?.libraryEntryId ?? input.libraryEntryId ?? null,
+    sourceId: input.sourceId,
+    sourceTitleId: input.sourceTitleId,
+    titleName: input.titleName,
+    chapterId: input.chapterId,
+    chapterTitle: input.chapterTitle,
+  });
+}
+
+export function endReadingSession(sessionId: string) {
+  const { analyticsRepository } = getRepositories();
+  return analyticsRepository.endSession(sessionId);
+}
+
+export function bootstrapReaderAnalytics() {
+  ensureAnalyticsTables();
+  const { analyticsRepository } = getRepositories();
+  analyticsRepository.closeActiveSessionsAtStartup();
 }

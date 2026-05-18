@@ -10,6 +10,12 @@ import type {
   ReadingStatus,
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
+import type { ImportResult } from "@contracts/imports";
+import type {
+  ReadingHistoryItem,
+  ReadingSessionSummary,
+  ReadingTitleAnalytics,
+} from "@contracts/analytics";
 import type {
   ReaderPreferences,
   ReaderStateSnapshot,
@@ -185,5 +191,39 @@ contextBridge.exposeInMainWorld("downloadsStore", {
   },
   retry(jobId: string) {
     return ipcRenderer.invoke("downloads:retry", jobId) as Promise<DownloadJob | null>;
+  },
+});
+
+contextBridge.exposeInMainWorld("importsStore", {
+  importFolder() {
+    return ipcRenderer.invoke("imports:folder") as Promise<ImportResult | null>;
+  },
+  importCbz() {
+    return ipcRenderer.invoke("imports:cbz") as Promise<ImportResult | null>;
+  },
+  importPdf() {
+    return ipcRenderer.invoke("imports:pdf") as Promise<ImportResult | null>;
+  },
+});
+
+contextBridge.exposeInMainWorld("analyticsStore", {
+  listHistory() {
+    return ipcRenderer.invoke("analytics:list-history") as Promise<ReadingHistoryItem[]>;
+  },
+  listTitleAnalytics() {
+    return ipcRenderer.invoke("analytics:list-title-analytics") as Promise<ReadingTitleAnalytics[]>;
+  },
+  startReaderSession(input: {
+    sourceId: string;
+    sourceTitleId: string;
+    libraryEntryId?: string | null;
+    titleName: string;
+    chapterId: string;
+    chapterTitle: string;
+  }) {
+    return ipcRenderer.invoke("reader:start-session", input) as Promise<string>;
+  },
+  endReaderSession(sessionId: string) {
+    return ipcRenderer.invoke("reader:end-session", sessionId) as Promise<ReadingSessionSummary | null>;
   },
 });

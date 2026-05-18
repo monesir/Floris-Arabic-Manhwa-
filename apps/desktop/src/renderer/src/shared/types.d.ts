@@ -9,6 +9,12 @@ import type {
   ReadingStatus,
 } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
+import type { ImportResult } from "@contracts/imports";
+import type {
+  ReadingHistoryItem,
+  ReadingSessionSummary,
+  ReadingTitleAnalytics,
+} from "@contracts/analytics";
 import type {
   DownloadJob,
   DownloadQueueSummary,
@@ -111,6 +117,24 @@ declare global {
       ) => Promise<DownloadSettingsSnapshot>;
       pickExternalDirectory: () => Promise<DownloadSettingsSnapshot>;
       retry: (jobId: string) => Promise<DownloadJob | null>;
+    };
+    importsStore: {
+      importFolder: () => Promise<ImportResult | null>;
+      importCbz: () => Promise<ImportResult | null>;
+      importPdf: () => Promise<ImportResult | null>;
+    };
+    analyticsStore: {
+      listHistory: () => Promise<ReadingHistoryItem[]>;
+      listTitleAnalytics: () => Promise<ReadingTitleAnalytics[]>;
+      startReaderSession: (input: {
+        sourceId: string;
+        sourceTitleId: string;
+        libraryEntryId?: string | null;
+        titleName: string;
+        chapterId: string;
+        chapterTitle: string;
+      }) => Promise<string>;
+      endReaderSession: (sessionId: string) => Promise<ReadingSessionSummary | null>;
     };
   }
 }

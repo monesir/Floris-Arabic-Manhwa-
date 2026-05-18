@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import type { ImportResult } from "@contracts/imports";
 import type {
   LibraryCustomList,
   LibraryEntry,
@@ -6,6 +7,7 @@ import type {
 } from "@contracts/library";
 import type { SourceCatalogItem } from "@contracts/source";
 import { LibraryCustomListsPanel } from "@renderer/features/library/LibraryCustomListsPanel";
+import { importCbz, importFolder, importPdf } from "@renderer/shared/imports-store";
 import {
   addLibraryEntryToList,
   createLibraryList,
@@ -75,6 +77,8 @@ export function LibraryPage() {
   const [listNameDraft, setListNameDraft] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [isRefreshingUpdates, setIsRefreshingUpdates] = useState(false);
+  const [isImporting, setIsImporting] = useState<null | "folder" | "cbz" | "pdf">(null);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
   const [pendingEntryIds, setPendingEntryIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -159,6 +163,31 @@ export function LibraryPage() {
       setEntries(nextEntries);
       setCustomLists(nextLists);
     });
+  }
+
+  function handleImport(
+    kind: "folder" | "cbz" | "pdf",
+    action: () => Promise<ImportResult | null>,
+  ) {
+    setIsImporting(kind);
+    setError(null);
+    setImportNotice(null);
+
+    void action()
+      .then((result) => {
+        if (!result) {
+          return;
+        }
+
+        setImportNotice(`Imported "${result.libraryEntry.titleName}" from ${result.importKind.toUpperCase()}.`);
+        return Promise.all([refreshLibraryState(), getSourceCatalog().then(setCatalog)]);
+      })
+      .catch((nextError: unknown) => {
+        setError(nextError instanceof Error ? nextError.message : "Failed to import local content.");
+      })
+      .finally(() => {
+        setIsImporting(null);
+      });
   }
 
   function handleApplySearch() {
@@ -328,6 +357,30 @@ export function LibraryPage() {
           </button>
           <button
             type="button"
+            className="browse-search__button browse-search__button--ghost"
+            disabled={Boolean(isImporting)}
+            onClick={() => handleImport("folder", importFolder)}
+          >
+            {isImporting === "folder" ? "Importing folder..." : "Import folder"}
+          </button>
+          <button
+            type="button"
+            className="browse-search__button browse-search__button--ghost"
+            disabled={Boolean(isImporting)}
+            onClick={() => handleImport("cbz", importCbz)}
+          >
+            {isImporting === "cbz" ? "Importing CBZ..." : "Import CBZ"}
+          </button>
+          <button
+            type="button"
+            className="browse-search__button browse-search__button--ghost"
+            disabled={Boolean(isImporting)}
+            onClick={() => handleImport("pdf", importPdf)}
+          >
+            {isImporting === "pdf" ? "Importing PDF..." : "Import PDF"}
+          </button>
+          <button
+            type="button"
             className="browse-search__button"
             disabled={isRefreshingUpdates}
             onClick={handleRefreshUpdates}
@@ -335,6 +388,7 @@ export function LibraryPage() {
             {isRefreshingUpdates ? "Refreshing..." : "Refresh"}
           </button>
         </div>
+        {importNotice ? <p className="browse-message">{importNotice}</p> : null}
 
         <div className="library-toolbar__grid">
           <label className="library-field">

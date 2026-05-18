@@ -59,6 +59,7 @@ export type ExternalPluginManifest = z.infer<typeof externalPluginManifestSchema
 export const BUILT_IN_PLUGIN_ID = "core.builtin";
 export const AZORA_SOURCE_ID = "azora.series";
 export const OLYMPUS_SOURCE_ID = "olympus.series";
+export const LOCAL_IMPORTS_SOURCE_ID = "local.imports";
 
 export const BUILT_IN_PLUGIN_RECORD: PluginRegistryRecord = {
   pluginId: BUILT_IN_PLUGIN_ID,
@@ -99,6 +100,20 @@ export const OLYMPUS_SOURCE_RECORD: SourceRegistryRecord = {
   },
 };
 
+export const LOCAL_IMPORTS_SOURCE_RECORD: SourceRegistryRecord = {
+  sourceId: LOCAL_IMPORTS_SOURCE_ID,
+  pluginId: BUILT_IN_PLUGIN_ID,
+  displayName: "Local Imports",
+  capabilities: {
+    ...EMPTY_SOURCE_CAPABILITIES,
+    browse: true,
+    search: true,
+    title_details: true,
+    chapter_list: true,
+    chapter_pages: true,
+  },
+};
+
 export const AZORA_SOURCE_METADATA: SourceMetadata = {
   pluginId: BUILT_IN_PLUGIN_ID,
   sourceId: AZORA_SOURCE_ID,
@@ -113,4 +128,12 @@ export const OLYMPUS_SOURCE_METADATA: SourceMetadata = {
   displayName: "Olympus Staff",
   language: "ar",
   baseUrl: "https://olympustaff.com",
+};
+
+export const LOCAL_IMPORTS_SOURCE_METADATA: SourceMetadata = {
+  pluginId: BUILT_IN_PLUGIN_ID,
+  sourceId: LOCAL_IMPORTS_SOURCE_ID,
+  displayName: "Local Imports",
+  language: "mixed",
+  baseUrl: "file://local-imports",
 };

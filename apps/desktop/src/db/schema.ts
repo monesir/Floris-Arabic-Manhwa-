@@ -103,6 +103,66 @@ const PHASE_ONE_SCHEMA = `
     updated_at TEXT NOT NULL,
     completed_at TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS imported_titles (
+    imported_title_id TEXT PRIMARY KEY,
+    title_name TEXT NOT NULL,
+    title_slug TEXT,
+    description TEXT,
+    cover_path TEXT,
+    source_path TEXT NOT NULL,
+    import_type TEXT NOT NULL CHECK(import_type IN ('folder', 'cbz', 'pdf')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS imported_chapters (
+    imported_chapter_id TEXT PRIMARY KEY,
+    imported_title_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    chapter_number REAL,
+    source_path TEXT NOT NULL,
+    availability TEXT NOT NULL CHECK(availability IN ('readable', 'locked', 'unavailable')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(imported_title_id) REFERENCES imported_titles(imported_title_id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS imported_pages (
+    imported_page_id TEXT PRIMARY KEY,
+    imported_chapter_id TEXT NOT NULL,
+    page_index INTEGER NOT NULL,
+    asset_path TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(imported_chapter_id) REFERENCES imported_chapters(imported_chapter_id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS reading_history (
+    history_id TEXT PRIMARY KEY,
+    library_entry_id TEXT,
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    title_name TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    opened_at TEXT NOT NULL,
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS reading_sessions (
+    session_id TEXT PRIMARY KEY,
+    library_entry_id TEXT,
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    title_name TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    duration_seconds INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
 `;
 
 const READING_PROGRESS_SCHEMA = `
@@ -140,6 +200,70 @@ const DOWNLOAD_JOBS_SCHEMA = `
   );
 `;
 
+const IMPORTED_CONTENT_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS imported_titles (
+    imported_title_id TEXT PRIMARY KEY,
+    title_name TEXT NOT NULL,
+    title_slug TEXT,
+    description TEXT,
+    cover_path TEXT,
+    source_path TEXT NOT NULL,
+    import_type TEXT NOT NULL CHECK(import_type IN ('folder', 'cbz', 'pdf')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS imported_chapters (
+    imported_chapter_id TEXT PRIMARY KEY,
+    imported_title_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    chapter_number REAL,
+    source_path TEXT NOT NULL,
+    availability TEXT NOT NULL CHECK(availability IN ('readable', 'locked', 'unavailable')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(imported_title_id) REFERENCES imported_titles(imported_title_id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS imported_pages (
+    imported_page_id TEXT PRIMARY KEY,
+    imported_chapter_id TEXT NOT NULL,
+    page_index INTEGER NOT NULL,
+    asset_path TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(imported_chapter_id) REFERENCES imported_chapters(imported_chapter_id) ON DELETE CASCADE
+  );
+`;
+
+const ANALYTICS_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS reading_history (
+    history_id TEXT PRIMARY KEY,
+    library_entry_id TEXT,
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    title_name TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    opened_at TEXT NOT NULL,
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS reading_sessions (
+    session_id TEXT PRIMARY KEY,
+    library_entry_id TEXT,
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    title_name TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    chapter_title TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    duration_seconds INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
+`;
+
 function ensureColumn(
   database: DatabaseSync,
   tableName: string,
@@ -161,6 +285,8 @@ export function applyPhaseOneSchema(database: DatabaseSync) {
   database.exec(PHASE_ONE_SCHEMA);
   database.exec(READING_PROGRESS_SCHEMA);
   database.exec(DOWNLOAD_JOBS_SCHEMA);
+  database.exec(IMPORTED_CONTENT_SCHEMA);
+  database.exec(ANALYTICS_SCHEMA);
   ensureColumn(database, "library_entries", "cover_url", "TEXT");
   ensureColumn(
     database,
