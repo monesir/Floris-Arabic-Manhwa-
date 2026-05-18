@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { AddLibraryEntryInput, LibraryEntry } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
   AppLanguage,
@@ -40,6 +41,15 @@ contextBridge.exposeInMainWorld("pluginRegistry", {
       pluginDirectory: string;
       plugins: PluginListItem[];
     }>;
+  },
+});
+
+contextBridge.exposeInMainWorld("libraryStore", {
+  add(input: AddLibraryEntryInput) {
+    return ipcRenderer.invoke("library:add", input) as Promise<LibraryEntry>;
+  },
+  list() {
+    return ipcRenderer.invoke("library:list") as Promise<LibraryEntry[]>;
   },
 });
 

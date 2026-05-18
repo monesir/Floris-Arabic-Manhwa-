@@ -8,6 +8,7 @@ export default defineConfig({
       alias: {
         "@contracts": resolve(__dirname, "src/shared/contracts"),
         "@db": resolve(__dirname, "src/db"),
+        "@library": resolve(__dirname, "src/services/library"),
         "@services": resolve(__dirname, "src/services"),
         "@main": resolve(__dirname, "src/main"),
         "@plugins": resolve(__dirname, "src/plugins"),
@@ -29,6 +30,7 @@ export default defineConfig({
       alias: {
         "@renderer": resolve(__dirname, "src/renderer/src"),
         "@contracts": resolve(__dirname, "src/shared/contracts"),
+        "@library": resolve(__dirname, "src/services/library"),
         "@services": resolve(__dirname, "src/services"),
         "@plugins": resolve(__dirname, "src/plugins"),
       },

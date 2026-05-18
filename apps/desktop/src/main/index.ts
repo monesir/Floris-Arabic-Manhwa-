@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron";
 import { join } from "node:path";
 import { initializeDatabase } from "@db/database";
 import { applyPhaseOneSchema } from "@db/schema";
+import { registerLibraryIpc } from "@main/ipc/library";
 import { registerPluginIpc } from "@main/ipc/plugins";
 import { registerSettingsIpc } from "@main/ipc/settings";
 import { registerSourceIpc } from "@main/ipc/sources";
@@ -56,6 +57,7 @@ app.whenReady().then(() => {
   applyPhaseOneSchema(database);
   bootstrapSettingsState();
   bootstrapPluginRegistry(userDataPath);
+  registerLibraryIpc();
   registerSettingsIpc();
   registerPluginIpc(userDataPath);
   registerSourceIpc();

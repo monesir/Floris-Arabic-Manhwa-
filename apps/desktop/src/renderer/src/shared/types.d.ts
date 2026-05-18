@@ -1,3 +1,4 @@
+import type { AddLibraryEntryInput, LibraryEntry } from "@contracts/library";
 import type { PluginListItem } from "@contracts/plugin";
 import type {
   AppLanguage,
@@ -35,6 +36,10 @@ declare global {
         pluginDirectory: string;
         plugins: PluginListItem[];
       }>;
+    };
+    libraryStore: {
+      add: (input: AddLibraryEntryInput) => Promise<LibraryEntry>;
+      list: () => Promise<LibraryEntry[]>;
     };
     sourceRegistry: {
       getCatalog: () => Promise<SourceCatalogItem[]>;

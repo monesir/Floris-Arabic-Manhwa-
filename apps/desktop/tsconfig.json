@@ -21,6 +21,7 @@
       "@renderer/*": ["src/renderer/src/*"],
       "@contracts/*": ["src/shared/contracts/*"],
       "@db/*": ["src/db/*"],
+      "@library/*": ["src/services/library/*"],
       "@services/*": ["src/services/*"],
       "@main/*": ["src/main/*"],
       "@plugins/*": ["src/plugins/*"]
