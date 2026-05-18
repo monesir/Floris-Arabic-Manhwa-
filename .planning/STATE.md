@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 5 of 6 (Offline and Analytics)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Executing remaining Phase 5 plans
-Last activity: 2026-05-18 - Completed 05-01 app-managed download queue and real Downloads route
+Last activity: 2026-05-18 - Completed 05-02 external destination controls and retry handling
 
-Progress: [#######---] 72%
+Progress: [########--] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 21 min
 - Total execution time: 3.1 hours
 
@@ -31,11 +31,11 @@ Progress: [#######---] 72%
 | 2 | 3 | 65 min | 22 min |
 | 3 | 3 | 66 min | 22 min |
 | 4 | 3 | 41 min | 14 min |
-| 5 | 1 | 18 min | 18 min |
+| 5 | 2 | 32 min | 16 min |
 
 **Recent Trend:**
-- Last 5 plans: 19 min, 13 min, 15 min, 13 min, 18 min
-- Trend: Stable; downloads added moderate main-process/storage complexity but remained within the recent execution band
+- Last 5 plans: 13 min, 15 min, 13 min, 18 min, 14 min
+- Trend: Stable; download work continues to stay within the recent execution band despite filesystem and dialog integration
 
 ## Accumulated Context
 
@@ -72,10 +72,11 @@ Recent decisions affecting current work:
 - 04-03 execution: Persist progress by `source_id + source_title_id` with optional library linkage and use it to power `Continue`.
 - 05-01 execution: Materialize offline downloads through app-managed user-data storage before adding external destinations.
 - 05-01 execution: Persist download queue state in SQLite and resume interrupted `running` jobs as `pending` on app restart.
+- 05-02 execution: Treat external destination choice as an app-level preference rather than per-job ad hoc prompting.
+- 05-02 execution: Retry failed jobs by resetting the persisted job state back to `pending` and re-entering the same queue processor.
 
 ### Pending Todos
 
-- Execute 05-02 for external destinations and retry handling.
 - Execute 05-03 for local content import.
 - Execute 05-04 for reading history and per-title time analytics.
 
@@ -85,7 +86,7 @@ Recent decisions affecting current work:
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
-- External destination picking, retry UX, and import normalization still need completion in the remaining Phase 5 plans.
+- Local import normalization and analytics tables still need completion in the remaining Phase 5 plans.
 
 ## Deferred Items
 
@@ -98,5 +99,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed 05-01 and prepared to continue the rest of Phase 5
+Stopped at: Completed 05-02 and prepared to continue the rest of Phase 5
 Resume file: .planning/ROADMAP.md
