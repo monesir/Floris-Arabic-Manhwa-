@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 1 of 6 (Foundation Shell)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: Ready to execute
-Last activity: 2026-05-18 - Captured Phase 1 context and created execution plans
+Last activity: 2026-05-18 - Completed 01-01 desktop shell scaffold and prepared 01-02
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 6%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: 0 min
-- Total execution time: 0.0 hours
+- Total plans completed: 1
+- Average duration: 9 min
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 | 1 | 9 min | 9 min |
 
 **Recent Trend:**
-- Last 5 plans: none
+- Last 5 plans: 9 min
 - Trend: Stable
 
 ## Accumulated Context
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - Phase 1 planning: Use a real shell with smart placeholders and full navigation from day one.
 - Phase 1 planning: Use a minimal real persistence schema instead of browser-only storage.
 - Phase 1 planning: Treat built-in plugin runtime and external plugin validation as separate Phase 1 concerns.
+- 01-01 execution: Use a real pnpm workspace with `apps/desktop` as the shell root.
+- 01-01 execution: Keep the full navigation map visible now through intentional placeholder pages instead of hiding later routes.
 
 ### Pending Todos
 
@@ -55,7 +57,7 @@ None yet.
 
 - Source extraction details for `azoramoon.com` and `olympustaff.com` still need phase-level validation before implementation.
 - External plugin trust boundaries need tighter planning before runtime loading is implemented.
-- The exact SQLite access/migration approach is still at the agent's discretion and must stay consistent with the locked persistence decisions.
+- The exact SQLite access and migration approach is still at the agent's discretion and must stay consistent with the locked persistence decisions.
 
 ## Deferred Items
 
@@ -68,5 +70,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Phase 1 planning completed with context, research, walking skeleton, and three PLAN files
+Stopped at: Completed 01-01 and created its execution summary
 Resume file: .planning/phases/01-foundation-shell/01-CONTEXT.md
