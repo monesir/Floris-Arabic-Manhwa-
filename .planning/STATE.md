@@ -10,28 +10,29 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 2 of 6 (Source Browse MVP)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: Ready to execute
-Last activity: 2026-05-18 - Discussed and planned Phase 2
+Last activity: 2026-05-18 - Executed `02-01` source runtime and built-in adapters
 
-Progress: [###-------] 18%
+Progress: [####------] 24%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 18 min
-- Total execution time: 0.9 hours
+- Total plans completed: 4
+- Average duration: 21 min
+- Total execution time: 1.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3 | 55 min | 18 min |
+| 2 | 1 | 28 min | 28 min |
 
 **Recent Trend:**
-- Last 5 plans: 9 min, 29 min, 17 min
-- Trend: Stable with moderate integration complexity
+- Last 5 plans: 9 min, 29 min, 17 min, 28 min
+- Trend: Stable with rising parser integration complexity
 
 ## Accumulated Context
 
@@ -52,15 +53,17 @@ Recent decisions affecting current work:
 - 01-02 execution: Use `process.env.ELECTRON_RENDERER_URL` and `../renderer/index.html` as the main-window loading path expected by `electron-vite@5`.
 - 01-03 execution: Use a capability-driven shared source contract and registry-backed Plugins page.
 - 01-03 execution: Discover external plugins from the app user-data `plugins` directory while keeping external runtime execution deferred.
+- 02-01 execution: Normalize browse/search/title/chapter data in the main process and expose it only through preload/IPC.
+- 02-01 execution: Model locked chapters explicitly in source results instead of treating them as readable pages.
 
 ### Pending Todos
 
-- Execute `02-01` to build the normalized built-in source runtime and initial site adapters.
+- Execute `02-02` to replace the Browse placeholder with real source-scoped browse, search, and title-detail UI.
 
 ### Blockers/Concerns
 
-- Source extraction details for `azoramoon.com` and `olympustaff.com` still need phase-level validation before implementation.
 - `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
+- Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
 - External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
 
 ## Deferred Items
@@ -74,5 +77,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Planned Phase 2 and prepared to execute `02-01`
+Stopped at: Completed `02-01` and prepared to execute `02-02`
 Resume file: .planning/phases/02-source-browse-mvp/02-CONTEXT.md

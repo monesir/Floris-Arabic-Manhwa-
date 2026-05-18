@@ -49,7 +49,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Implement the normalized source runtime and the first site adapters.
+- [x] 02-01: Implement the normalized source runtime and the first site adapters.
 - [ ] 02-02: Build browse/search/detail flows for supported sources in the renderer UI.
 - [ ] 02-03: Connect add-to-library behavior to the persistent library model.
 
@@ -126,7 +126,7 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation Shell | 3/3 | Complete | 2026-05-18 |
-| 2. Source Browse MVP | 0/3 | Not started | - |
+| 2. Source Browse MVP | 1/3 | In progress | - |
 | 3. Library Workflow | 0/3 | Not started | - |
 | 4. Reader Core | 0/3 | Not started | - |
 | 5. Offline and Analytics | 0/4 | Not started | - |
