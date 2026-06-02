@@ -43,6 +43,20 @@ export type TranslationDictionary = {
   pluginsSourcesLabel: string;
   pluginsFailureLabel: string;
   pluginsActionsLabel: string;
+  pluginsRescanLabel: string;
+  pluginsRescanningLabel: string;
+  pluginsCompatibilityLabel: string;
+  pluginsRuntimeModeLabel: string;
+  pluginsEntryFileLabel: string;
+  pluginsManifestLabel: string;
+  pluginsLoadedSourcesLabel: string;
+  pluginsSummaryExternalLabel: string;
+  pluginsSummaryRuntimeLabel: string;
+  pluginsCompatibilityCompatibleValue: string;
+  pluginsCompatibilityIncompatibleValue: string;
+  pluginsCompatibilityUnknownValue: string;
+  pluginsNoEntryFile: string;
+  pluginsNoManifest: string;
 };
 
 export const translations: Record<AppLanguage, TranslationDictionary> = {
@@ -89,6 +103,20 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     pluginsSourcesLabel: "Sources",
     pluginsFailureLabel: "Failure reason",
     pluginsActionsLabel: "Derived actions",
+    pluginsRescanLabel: "Rescan plugins",
+    pluginsRescanningLabel: "Rescanning...",
+    pluginsCompatibilityLabel: "Compatibility",
+    pluginsRuntimeModeLabel: "Runtime mode",
+    pluginsEntryFileLabel: "Entry file",
+    pluginsManifestLabel: "Manifest",
+    pluginsLoadedSourcesLabel: "Loaded sources",
+    pluginsSummaryExternalLabel: "External records",
+    pluginsSummaryRuntimeLabel: "Runtime-ready",
+    pluginsCompatibilityCompatibleValue: "Compatible",
+    pluginsCompatibilityIncompatibleValue: "Incompatible",
+    pluginsCompatibilityUnknownValue: "Unknown",
+    pluginsNoEntryFile: "No entry file declared",
+    pluginsNoManifest: "No manifest path recorded",
   },
   ar: {
     sidebarEyebrow: "واجهة ويندوز الأساسية",
@@ -133,5 +161,19 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     pluginsSourcesLabel: "المصادر",
     pluginsFailureLabel: "سبب الفشل",
     pluginsActionsLabel: "الأفعال المشتقة",
+    pluginsRescanLabel: "Rescan plugins",
+    pluginsRescanningLabel: "Rescanning...",
+    pluginsCompatibilityLabel: "Compatibility",
+    pluginsRuntimeModeLabel: "Runtime mode",
+    pluginsEntryFileLabel: "Entry file",
+    pluginsManifestLabel: "Manifest",
+    pluginsLoadedSourcesLabel: "Loaded sources",
+    pluginsSummaryExternalLabel: "External records",
+    pluginsSummaryRuntimeLabel: "Runtime-ready",
+    pluginsCompatibilityCompatibleValue: "Compatible",
+    pluginsCompatibilityIncompatibleValue: "Incompatible",
+    pluginsCompatibilityUnknownValue: "Unknown",
+    pluginsNoEntryFile: "No entry file declared",
+    pluginsNoManifest: "No manifest path recorded",
   },
 };

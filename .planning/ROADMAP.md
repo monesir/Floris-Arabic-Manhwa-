@@ -114,9 +114,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Implement plugin discovery, manifest validation, and bounded runtime loading.
-- [ ] 06-02: Build plugin status/error UX and compatibility reporting.
-- [ ] 06-03: Harden Windows packaging, release configuration, and distribution readiness.
+- [x] 06-01: Implement plugin discovery, manifest validation, and bounded runtime loading.
+- [x] 06-02: Build plugin status/error UX and compatibility reporting.
+- [x] 06-03: Harden Windows packaging, release configuration, and distribution readiness.
 
 ## Progress
 
@@ -130,4 +130,4 @@ Phases execute in numeric order: 2 -> 2.1 -> 2.2 -> 3 -> 3.1 -> 4
 | 3. Library Workflow | 3/3 | Complete | 2026-05-18 |
 | 4. Reader Core | 3/3 | Complete | 2026-05-18 |
 | 5. Offline and Analytics | 4/4 | Complete | 2026-05-18 |
-| 6. Plugin Hardening and Release Readiness | 0/3 | Not started | - |
+| 6. Plugin Hardening and Release Readiness | 3/3 | Complete | 2026-05-18 |

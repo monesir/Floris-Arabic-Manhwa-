@@ -1,0 +1,2 @@
+أكشن ||| CLASS: ['subtitle', 'me-1', 'mt-2']
+مغامرات ||| CLASS: ['subtitle', 'me-1', 'mt-2']

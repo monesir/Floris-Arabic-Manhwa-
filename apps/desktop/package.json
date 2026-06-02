@@ -2,18 +2,23 @@
   "name": "@floirsmnh/desktop",
   "version": "0.1.0",
   "private": true,
+  "description": "Windows-first local manhwa reader with source plugins, offline downloads, and reading analytics.",
+  "author": "monesir",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "pnpm exec electron-vite dev",
     "build": "pnpm exec electron-vite build",
     "preview": "pnpm exec electron-vite preview",
-    "typecheck": "pnpm exec tsc --noEmit"
+    "typecheck": "pnpm exec tsc --noEmit",
+    "dist:dir": "pnpm exec electron-builder --win dir",
+    "dist:win": "pnpm exec electron-builder --win nsis"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.4",
+    "sharp": "^0.34.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -22,8 +27,34 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "electron": "^42.1.0",
+    "electron-builder": "^26.0.12",
     "electron-vite": "^5.0.0",
     "typescript": "^6.0.3",
     "vite": "^7.3.3"
+  },
+  "build": {
+    "appId": "com.floirsmnh.desktop",
+    "productName": "FloirsMNH",
+    "asar": true,
+    "directories": {
+      "output": "release-artifacts"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "dir",
+        "nsis"
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "FloirsMNH-${version}-${target}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

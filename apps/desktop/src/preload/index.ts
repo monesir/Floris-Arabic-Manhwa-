@@ -69,6 +69,12 @@ contextBridge.exposeInMainWorld("pluginRegistry", {
       plugins: PluginListItem[];
     }>;
   },
+  rescan() {
+    return ipcRenderer.invoke("plugins:rescan") as Promise<{
+      pluginDirectory: string;
+      plugins: PluginListItem[];
+    }>;
+  },
 });
 
 contextBridge.exposeInMainWorld("libraryStore", {
@@ -213,6 +219,12 @@ contextBridge.exposeInMainWorld("analyticsStore", {
   listTitleAnalytics() {
     return ipcRenderer.invoke("analytics:list-title-analytics") as Promise<ReadingTitleAnalytics[]>;
   },
+  clearHistory() {
+    return ipcRenderer.invoke("analytics:clear-history") as Promise<void>;
+  },
+  listReadChapterIds(sourceId: string, sourceTitleId: string) {
+    return ipcRenderer.invoke("analytics:list-read-chapters", sourceId, sourceTitleId) as Promise<string[]>;
+  },
   startReaderSession(input: {
     sourceId: string;
     sourceTitleId: string;
@@ -226,4 +238,16 @@ contextBridge.exposeInMainWorld("analyticsStore", {
   endReaderSession(sessionId: string) {
     return ipcRenderer.invoke("reader:end-session", sessionId) as Promise<ReadingSessionSummary | null>;
   },
+});
+
+contextBridge.exposeInMainWorld("coverCache", {
+  resolve(remoteUrl: string) {
+    return ipcRenderer.invoke("covers:resolve", remoteUrl) as Promise<string>;
+  },
+  clear() {
+    return ipcRenderer.invoke("covers:clear") as Promise<boolean>;
+  },
+  getSize() {
+    return ipcRenderer.invoke("covers:size") as Promise<number>;
+  }
 });

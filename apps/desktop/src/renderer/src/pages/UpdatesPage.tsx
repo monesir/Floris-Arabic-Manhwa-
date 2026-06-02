@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { LibraryUpdateItem } from "@contracts/library";
 import { listLibraryUpdates, refreshLibraryUpdates } from "@renderer/shared/library-store";
+import { CachedImage } from "@renderer/shared/CachedImage";
 
 export function UpdatesPage() {
   const [updates, setUpdates] = useState<LibraryUpdateItem[]>([]);
@@ -69,7 +70,7 @@ export function UpdatesPage() {
             <article className="updates-card" key={update.libraryEntryId}>
               <div className="updates-card__cover-wrap">
                 {update.coverUrl ? (
-                  <img className="updates-card__cover" src={update.coverUrl} alt={update.titleName} />
+                  <CachedImage className="updates-card__cover" src={update.coverUrl} alt={update.titleName} />
                 ) : (
                   <div className="updates-card__cover updates-card__cover--empty">No cover</div>
                 )}

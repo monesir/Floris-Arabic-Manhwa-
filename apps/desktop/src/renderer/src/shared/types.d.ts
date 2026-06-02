@@ -63,6 +63,10 @@ declare global {
         pluginDirectory: string;
         plugins: PluginListItem[];
       }>;
+      rescan: () => Promise<{
+        pluginDirectory: string;
+        plugins: PluginListItem[];
+      }>;
     };
     libraryStore: {
       add: (input: AddLibraryEntryInput) => Promise<LibraryEntry>;
@@ -126,6 +130,8 @@ declare global {
     analyticsStore: {
       listHistory: () => Promise<ReadingHistoryItem[]>;
       listTitleAnalytics: () => Promise<ReadingTitleAnalytics[]>;
+      clearHistory: () => Promise<void>;
+      listReadChapterIds: (sourceId: string, sourceTitleId: string) => Promise<string[]>;
       startReaderSession: (input: {
         sourceId: string;
         sourceTitleId: string;
@@ -135,6 +141,11 @@ declare global {
         chapterTitle: string;
       }) => Promise<string>;
       endReaderSession: (sessionId: string) => Promise<ReadingSessionSummary | null>;
+    };
+    coverCache: {
+      resolve: (remoteUrl: string) => Promise<string>;
+      clear: () => Promise<boolean>;
+      getSize: () => Promise<number>;
     };
   }
 }

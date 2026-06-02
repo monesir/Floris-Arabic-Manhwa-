@@ -10,9 +10,16 @@ import { LibraryCustomListRepository } from "@db/repositories/library-custom-lis
 import { LibraryRepository } from "@db/repositories/library-repository";
 import { LibraryUpdateRepository } from "@db/repositories/library-update-repository";
 import { getSourceTitleDetails } from "@services/sources/source-registry";
+import { resolveCoverUrl } from "@services/covers/cover-cache";
 
-export function addToLibrary(input: AddLibraryEntryInput) {
+export async function addToLibrary(input: AddLibraryEntryInput) {
   const repository = new LibraryRepository(getDatabase());
+
+  if (input.coverUrl) {
+    const localCoverUrl = await resolveCoverUrl(input.coverUrl);
+    return repository.addOrUpdateEntry({ ...input, coverUrl: localCoverUrl });
+  }
+
   return repository.addOrUpdateEntry(input);
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import type { ImportResult } from "@contracts/imports";
 import type {
   LibraryCustomList,
@@ -9,6 +9,7 @@ import type { SourceCatalogItem } from "@contracts/source";
 import { LibraryCustomListsPanel } from "@renderer/features/library/LibraryCustomListsPanel";
 import { importCbz, importFolder, importPdf } from "@renderer/shared/imports-store";
 import {
+  addLibraryEntry,
   addLibraryEntryToList,
   createLibraryList,
   listLibraryEntries,
@@ -18,7 +19,9 @@ import {
   updateLibraryEntryFavorite,
   updateLibraryEntryStatus,
 } from "@renderer/shared/library-store";
-import { getSourceCatalog } from "@renderer/shared/source-registry";
+import { getSourceCatalog, searchSourceTitles } from "@renderer/shared/source-registry";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { CachedImage } from "@renderer/shared/CachedImage";
 
 const STATUS_OPTIONS: Array<{ value: ReadingStatus | "all"; label: string }> = [
   { value: "all", label: "All statuses" },
@@ -63,6 +66,8 @@ function initialsFromTitle(title: string) {
 }
 
 export function LibraryPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const [customLists, setCustomLists] = useState<LibraryCustomList[]>([]);
   const [catalog, setCatalog] = useState<SourceCatalogItem[]>([]);
@@ -72,7 +77,7 @@ export function LibraryPage() {
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | "all">("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [selectedListId, setSelectedListId] = useState<string | "all">("all");
+  const [selectedListId, setSelectedListId] = useState<string | "all">(searchParams.get("list") ?? "all");
   const [sortOrder, setSortOrder] = useState<(typeof SORT_OPTIONS)[number]["value"]>("updated_desc");
   const [listNameDraft, setListNameDraft] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
@@ -80,6 +85,33 @@ export function LibraryPage() {
   const [isImporting, setIsImporting] = useState<null | "folder" | "cbz" | "pdf">(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
   const [pendingEntryIds, setPendingEntryIds] = useState<Record<string, boolean>>({});
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fetchedCovers, setFetchedCovers] = useState<Record<string, string>>({});
+  const triedCoversRef = useRef<Set<string>>(new Set());
+
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const importRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) {
+        setFiltersOpen(false);
+      }
+      if (importRef.current && !importRef.current.contains(event.target as Node)) {
+        setImportMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const routeListId = searchParams.get("list") ?? "all";
+    setSelectedListId(routeListId);
+  }, [searchParams]);
 
   useEffect(() => {
     setStatus("loading");
@@ -107,6 +139,39 @@ export function LibraryPage() {
         setError(nextError instanceof Error ? nextError.message : "Failed to load local library.");
       });
   }, [favoritesOnly, searchValue, selectedListId, sortOrder, statusFilter]);
+
+  // Fetch covers for library entries that have no coverUrl
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    const missing = entries.filter(
+      (e) => !e.coverUrl && !fetchedCovers[e.sourceTitleId] && !triedCoversRef.current.has(e.sourceTitleId),
+    );
+    if (missing.length === 0) return;
+
+    const unique = Array.from(new Map(missing.map((e) => [e.sourceTitleId, e])).values()).slice(0, 20);
+
+    for (const entry of unique) {
+      triedCoversRef.current.add(entry.sourceTitleId);
+      // Use search instead of getSourceTitle to get clean covers (no watermarks)
+      void searchSourceTitles(entry.sourceId, entry.titleName, 1)
+        .then((res) => {
+          const match = res?.items?.find((i) => i.titleId === entry.sourceTitleId);
+          if (match?.coverUrl) {
+            setFetchedCovers((prev) => ({ ...prev, [entry.sourceTitleId]: match.coverUrl as string }));
+            // Also update the library entry in DB so it has the cover next time
+            void addLibraryEntry({
+              sourceId: entry.sourceId,
+              sourceTitleId: entry.sourceTitleId,
+              titleName: entry.titleName,
+              sourceTitleSlug: entry.sourceTitleSlug,
+              coverUrl: match.coverUrl,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [entries, status, fetchedCovers]);
 
   const sourceLabels = useMemo(
     () =>
@@ -201,6 +266,7 @@ export function LibraryPage() {
     setFavoritesOnly(false);
     setSelectedListId("all");
     setSortOrder("updated_desc");
+    setSearchParams(new URLSearchParams(), { replace: true });
   }
 
   function handleRefreshUpdates() {
@@ -280,6 +346,7 @@ export function LibraryPage() {
       .then((nextList) => {
         setListNameDraft("");
         setSelectedListId(nextList.listId);
+        setSearchParams(new URLSearchParams({ list: nextList.listId }), { replace: true });
         return refreshLibraryState();
       })
       .catch((nextError: unknown) => {
@@ -288,6 +355,16 @@ export function LibraryPage() {
       .finally(() => {
         setIsCreatingList(false);
       });
+  }
+
+  function handleSelectList(nextListId: string | "all") {
+    setSelectedListId(nextListId);
+    if (nextListId === "all") {
+      setSearchParams(new URLSearchParams(), { replace: true });
+      return;
+    }
+
+    setSearchParams(new URLSearchParams({ list: nextListId }), { replace: true });
   }
 
   function handleToggleListMembership(entry: LibraryEntry, list: LibraryCustomList) {
@@ -317,180 +394,311 @@ export function LibraryPage() {
   const favoriteCount = entries.filter((entry) => entry.isFavorite).length;
 
   return (
-    <div className="page">
-      <section className="page__header page__header--split">
-        <div>
-          <span className="page__eyebrow">Library</span>
-          <h1 className="page__title page__title--compact">All Series</h1>
-        </div>
-        <div className="page__grid">
-          <div className="page__card">
-            <div className="page__card-label">Entries</div>
-            <div className="page__card-value">{entries.length}</div>
-          </div>
-          <div className="page__card">
-            <div className="page__card-label">Favorites</div>
-            <div className="page__card-value">{favoriteCount}</div>
-          </div>
-          <div className="page__card">
-            <div className="page__card-label">Lists</div>
-            <div className="page__card-value">{customLists.length}</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="page__panel library-toolbar">
-        <div className="library-toolbar__header">
-          <div>
-            <h2 className="page__panel-title">Library controls</h2>
-            <p className="page__panel-copy">
-              Search by title or slug, narrow by reading state, and manage favorites
-              without leaving the library route.
-            </p>
+    <div className="page page--floirs">
+      <section className="floirs-toolbar">
+        <div className="floirs-toolbar__actions" style={{ gap: '0.5rem' }}>
+          <div className="floirs-search-shell floirs-search-shell--wide" style={{ flex: 1, maxWidth: '300px' }}>
+            <input
+              className="floirs-search-input"
+              type="search"
+              placeholder="Search library..."
+              value={searchDraft}
+              onChange={(event) => setSearchDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  handleApplySearch();
+                }
+              }}
+            />
           </div>
           <button
             type="button"
-            className="browse-search__button browse-search__button--ghost"
+            className="floirs-button floirs-button--icon"
+            title="Reset Filters"
             onClick={handleResetFilters}
           >
-            Reset filters
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
           </button>
+          <div style={{ position: 'relative' }} ref={filtersRef}>
+            <button
+              type="button"
+              className="floirs-button floirs-button--icon"
+              title="Filters & Categories"
+              onClick={() => setFiltersOpen((prev) => !prev)}
+              style={{
+                backgroundColor: filtersOpen ? 'rgba(255,255,255,0.1)' : 'transparent'
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+            </button>
+            {filtersOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: '0.5rem',
+                background: 'rgba(15, 15, 15, 0.85)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                zIndex: 100,
+                width: '320px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <label className="library-field">
+                    <span className="library-field__label" style={{ minWidth: '60px' }}>Status</span>
+                    <select
+                      className="browse-controls__select"
+                      value={statusFilter}
+                      onChange={(event) =>
+                        setStatusFilter(event.target.value as ReadingStatus | "all")
+                      }
+                      style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff' }}
+                    >
+                      {STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} style={{ background: '#1e1e1e', color: '#fff' }}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="library-field">
+                    <span className="library-field__label" style={{ minWidth: '60px' }}>Sort</span>
+                    <select
+                      className="browse-controls__select"
+                      value={sortOrder}
+                      onChange={(event) =>
+                        setSortOrder(
+                          event.target.value as (typeof SORT_OPTIONS)[number]["value"],
+                        )
+                      }
+                      style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff' }}
+                    >
+                      {SORT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} style={{ background: '#1e1e1e', color: '#fff' }}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="library-favorite-filter" style={{ marginTop: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={favoritesOnly}
+                      onChange={(event) => setFavoritesOnly(event.target.checked)}
+                    />
+                    <span style={{ fontSize: '0.9rem', color: '#ddd' }}>Favorites only</span>
+                  </label>
+                </div>
+                
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />
+
+                <LibraryCustomListsPanel
+                  customLists={customLists}
+                  selectedListId={selectedListId}
+                  draftName={listNameDraft}
+                  isCreating={isCreatingList}
+                  onDraftNameChange={setListNameDraft}
+                  onCreateList={handleCreateList}
+                  onSelectList={handleSelectList}
+                />
+
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
+                    <span className="page__pill" key={option.value} style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>
+                      {option.label}: {statusCounts[option.value as ReadingStatus]}
+                    </span>
+                  ))}
+                  <span className="page__pill" style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Total: {entries.length}</span>
+                  <span className="page__pill" style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Favs: {favoriteCount}</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ position: 'relative' }} ref={importRef}>
+            <button
+              type="button"
+              className="floirs-button floirs-button--icon"
+              title={isImporting ? "Importing..." : "Import..."}
+              disabled={Boolean(isImporting)}
+              onClick={() => setImportMenuOpen(!importMenuOpen)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-1.2-1.8A2 2 0 0 0 7.55 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path>
+                <path d="M12 10v6"></path>
+                <path d="M9 13h6"></path>
+              </svg>
+            </button>
+            {importMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: '0.5rem',
+                background: '#000000',
+                border: '1px solid #232323',
+                borderRadius: '8px',
+                padding: '0.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+                zIndex: 100,
+                minWidth: '160px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+              }}>
+                <button
+                  type="button"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#e0e0e0',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  onClick={() => { handleImport("folder", importFolder); setImportMenuOpen(false); }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-1.2-1.8A2 2 0 0 0 7.55 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path>
+                  </svg>
+                  Import Folder
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#e0e0e0',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  onClick={() => { handleImport("cbz", importCbz); setImportMenuOpen(false); }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                    <line x1="3" x2="21" y1="9" y2="9"></line>
+                    <line x1="9" x2="9" y1="21" y2="9"></line>
+                  </svg>
+                  Import CBZ
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#e0e0e0',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  onClick={() => { handleImport("pdf", importPdf); setImportMenuOpen(false); }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" x2="8" y1="13" y2="13"></line>
+                    <line x1="16" x2="8" y1="17" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  Import PDF
+                </button>
+              </div>
+            )}
+          </div>
           <button
             type="button"
-            className="browse-search__button browse-search__button--ghost"
-            disabled={Boolean(isImporting)}
-            onClick={() => handleImport("folder", importFolder)}
-          >
-            {isImporting === "folder" ? "Importing folder..." : "Import folder"}
-          </button>
-          <button
-            type="button"
-            className="browse-search__button browse-search__button--ghost"
-            disabled={Boolean(isImporting)}
-            onClick={() => handleImport("cbz", importCbz)}
-          >
-            {isImporting === "cbz" ? "Importing CBZ..." : "Import CBZ"}
-          </button>
-          <button
-            type="button"
-            className="browse-search__button browse-search__button--ghost"
-            disabled={Boolean(isImporting)}
-            onClick={() => handleImport("pdf", importPdf)}
-          >
-            {isImporting === "pdf" ? "Importing PDF..." : "Import PDF"}
-          </button>
-          <button
-            type="button"
-            className="browse-search__button"
+            className="floirs-button floirs-button--icon"
+            title={isRefreshingUpdates ? "Refreshing..." : "Refresh Library"}
             disabled={isRefreshingUpdates}
             onClick={handleRefreshUpdates}
           >
-            {isRefreshingUpdates ? "Refreshing..." : "Refresh"}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2v6h-6"></path>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+              <path d="M3 22v-6h6"></path>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
           </button>
-        </div>
-        {importNotice ? <p className="browse-message">{importNotice}</p> : null}
-
-        <div className="library-toolbar__grid">
-          <label className="library-field">
-            <span className="library-field__label">Search</span>
-            <div className="library-search">
-              <input
-                className="browse-search__input"
-                type="search"
-                placeholder="Search titles or slugs"
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleApplySearch();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="browse-search__button"
-                onClick={handleApplySearch}
-              >
-                Apply
-              </button>
-            </div>
-          </label>
-
-          <label className="library-field">
-            <span className="library-field__label">Status</span>
-            <select
-              className="browse-controls__select"
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as ReadingStatus | "all")
-              }
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="library-field">
-            <span className="library-field__label">Sort</span>
-            <select
-              className="browse-controls__select"
-              value={sortOrder}
-              onChange={(event) =>
-                setSortOrder(
-                  event.target.value as (typeof SORT_OPTIONS)[number]["value"],
-                )
-              }
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="library-favorite-filter">
-            <input
-              type="checkbox"
-              checked={favoritesOnly}
-              onChange={(event) => setFavoritesOnly(event.target.checked)}
-            />
-            <span>Favorites only</span>
-          </label>
-        </div>
-
-        <div className="library-status-row">
-          {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
-            <span className="page__pill" key={option.value}>
-              {option.label}: {statusCounts[option.value as ReadingStatus]}
-            </span>
-          ))}
         </div>
       </section>
 
-      <LibraryCustomListsPanel
-        customLists={customLists}
-        selectedListId={selectedListId}
-        draftName={listNameDraft}
-        isCreating={isCreatingList}
-        onDraftNameChange={setListNameDraft}
-        onCreateList={handleCreateList}
-        onSelectList={setSelectedListId}
-      />
-
-      <section className="page__panel">
-        <div className="library-toolbar__header">
-          <div>
-            <h2 className="page__panel-title">Saved library entries</h2>
-            <p className="page__panel-copy">
-              Each card is backed by SQLite and can be reclassified in place.
-            </p>
-          </div>
+      <section>
+        
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', marginBottom: '1rem' }} className="library-quick-tabs">
+          <button 
+            type="button" 
+            className={`page__pill ${selectedListId === 'all' ? 'page__pill--active' : ''}`}
+            onClick={() => setSelectedListId('all')}
+            style={{ 
+              cursor: 'pointer', 
+              border: 'none', 
+              background: selectedListId === 'all' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)',
+              color: selectedListId === 'all' ? '#fff' : '#aaa',
+              transition: 'all 0.2s',
+              padding: '0.5rem 1rem',
+              fontWeight: selectedListId === 'all' ? '600' : 'normal'
+            }}
+          >
+            All
+          </button>
+          {customLists.map(list => (
+            <button 
+              key={list.listId}
+              type="button" 
+              className={`page__pill ${selectedListId === list.listId ? 'page__pill--active' : ''}`}
+              onClick={() => setSelectedListId(list.listId)}
+              style={{ 
+                cursor: 'pointer', 
+                border: 'none', 
+                background: selectedListId === list.listId ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)',
+                color: selectedListId === list.listId ? '#fff' : '#aaa',
+                transition: 'all 0.2s',
+                padding: '0.5rem 1rem',
+                fontWeight: selectedListId === list.listId ? '600' : 'normal'
+              }}
+            >
+              {list.name}
+            </button>
+          ))}
         </div>
 
+        {importNotice ? <p className="browse-message">{importNotice}</p> : null}
         {status === "loading" ? <p className="browse-message">Loading local library...</p> : null}
         {error ? <p className="browse-message browse-message--error">{error}</p> : null}
 
@@ -500,106 +708,72 @@ export function LibraryPage() {
           </p>
         ) : null}
 
-        <div className="library-grid library-grid--rich">
+        <div className="floirs-grid floirs-grid--browse">
           {entries.map((entry) => {
             const isPending = Boolean(pendingEntryIds[entry.libraryEntryId]);
 
             return (
-              <article className="library-card library-card--rich" key={entry.libraryEntryId}>
-                <div className="library-card__cover-shell">
-                  {entry.coverUrl ? (
-                    <img
-                      className="library-card__cover"
-                      src={entry.coverUrl}
-                      alt={entry.titleName}
-                    />
-                  ) : (
-                    <div className="library-card__accent library-card__accent--fallback">
-                      {initialsFromTitle(entry.titleName)}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className={`library-favorite-button${entry.isFavorite ? " library-favorite-button--active" : ""}`}
-                    onClick={() => handleFavoriteToggle(entry)}
-                    disabled={isPending}
-                    aria-label={entry.isFavorite ? "Remove favorite" : "Mark favorite"}
-                  >
-                    {entry.isFavorite ? "Favorite" : "Mark favorite"}
-                  </button>
-                  {entry.pendingUpdateCount > 0 ? (
-                    <div className="library-update-badge">{entry.pendingUpdateCount}</div>
-                  ) : null}
-                </div>
-
-                <div className="library-card__body">
-                  <div className="library-card__topline">
-                    <span className="browse-pill">
-                      {sourceLabels.get(entry.sourceId) ?? entry.sourceId}
-                    </span>
-                    <span className={`library-reading-status library-reading-status--${entry.readingStatus}`}>
-                      {readingStatusLabel(entry.readingStatus)}
-                    </span>
-                  </div>
-
-                  <h3 className="library-card__title">{entry.titleName}</h3>
-
-                  <div className="library-card__meta-stack">
-                    <p className="library-card__meta">
-                      Added {new Date(entry.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="library-card__meta">
-                      Updated {new Date(entry.updatedAt).toLocaleDateString()}
-                    </p>
-                    <p className="library-card__meta">
-                      Slug: {entry.sourceTitleSlug ?? "No slug stored"}
-                    </p>
-                  </div>
-
-                  <label className="library-field">
-                    <span className="library-field__label">Reading status</span>
-                    <select
-                      className="browse-controls__select"
-                      value={entry.readingStatus}
-                      onChange={(event) =>
-                        handleStatusChange(
-                          entry.libraryEntryId,
-                          event.target.value as ReadingStatus,
-                        )
-                      }
-                      disabled={isPending}
-                    >
-                      {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <div className="library-memberships">
-                    <span className="library-field__label">Custom lists</span>
-                    {customLists.length === 0 ? (
-                      <p className="library-card__meta">
-                        No lists created yet. Create one above to organize titles beyond status and favorites.
-                      </p>
+              <article
+                className="floirs-cover-card floirs-cover-card--browse"
+                key={entry.libraryEntryId}
+              >
+                <button
+                  type="button"
+                  className="floirs-cover-card__action"
+                  onClick={() =>
+                    navigate(
+                      `/browse?source=${encodeURIComponent(entry.sourceId)}&title=${encodeURIComponent(entry.sourceTitleId)}&page=1`,
+                    )
+                  }
+                >
+                  <div className="floirs-cover-card__media">
+                    {(entry.coverUrl || fetchedCovers[entry.sourceTitleId]) ? (
+                      <CachedImage
+                        className="floirs-cover-card__image"
+                        src={(entry.coverUrl || fetchedCovers[entry.sourceTitleId])!}
+                        alt={entry.titleName}
+                      />
                     ) : (
-                      <div className="library-memberships__grid">
-                        {customLists.map((list) => (
-                          <label className="library-membership-chip" key={list.listId}>
-                            <input
-                              type="checkbox"
-                              checked={entry.listIds.includes(list.listId)}
-                              disabled={isPending}
-                              onChange={() => handleToggleListMembership(entry, list)}
-                            />
-                            <span>{list.name}</span>
-                          </label>
-                        ))}
+                      <div className="floirs-cover-card__fallback">
+                        {initialsFromTitle(entry.titleName)}
                       </div>
                     )}
+                    <div 
+                      style={{ 
+                        position: 'absolute', 
+                        top: '6px', 
+                        left: '6px', 
+                        zIndex: 10, 
+                        background: 'rgba(0, 0, 0, 0.65)', 
+                        backdropFilter: 'blur(8px)',
+                        color: '#fff',
+                        fontSize: '0.65rem',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        maxWidth: '80%',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                      }}
+                    >
+                      {sourceLabels.get(entry.sourceId) ?? entry.sourceId}
+                    </div>
+                    {entry.pendingUpdateCount > 0 ? (
+                      <div className="library-update-badge">{entry.pendingUpdateCount}</div>
+                    ) : null}
+                    
+                    <div className="floirs-cover-card__overlay">
+                      <div className="floirs-cover-card__title" title={entry.titleName}>
+                        {entry.titleName}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </button>
               </article>
             );
           })}

@@ -112,6 +112,7 @@ export function ReaderPage() {
   const progressSaveTimeoutRef = useRef<number | null>(null);
   const preferencesSaveTimeoutRef = useRef<number | null>(null);
   const activeSessionIdRef = useRef<string | null>(null);
+  const initialScrollChapterRef = useRef<string | null>(null);
 
   const sourceId = searchParams.get("source");
   const sourceTitleId = searchParams.get("title");
@@ -261,6 +262,10 @@ export function ReaderPage() {
       return;
     }
 
+    if (initialScrollChapterRef.current === currentChapterId) {
+      return;
+    }
+
     if (isPagedMode) {
       setCurrentPageIndex(clamp(progress.lastReadPageIndex, 0, Math.max(pages.length - 1, 0)));
       return;
@@ -271,10 +276,33 @@ export function ReaderPage() {
       return;
     }
 
-    window.requestAnimationFrame(() => {
-      const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
-      container.scrollTop = maxScrollTop * progress.lastReadScrollProgress;
-    });
+    // Check if we can scroll immediately (e.g. cached images)
+    window.setTimeout(() => {
+      if (initialScrollChapterRef.current === currentChapterId) return;
+      
+      const targetElement = pageElementRefs.current[progress.lastReadPageIndex];
+      if (targetElement && targetElement.clientHeight > 0) {
+        targetElement.scrollIntoView({ behavior: "auto", block: "start" });
+        initialScrollChapterRef.current = currentChapterId;
+      } else if (!targetElement) {
+        const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
+        if (maxScrollTop > 0) {
+          container.scrollTop = maxScrollTop * progress.lastReadScrollProgress;
+        }
+      }
+    }, 150);
+    
+    // Fallback for slower connections if onLoad fails to fire
+    window.setTimeout(() => {
+      if (initialScrollChapterRef.current === currentChapterId) return;
+      
+      const targetElement = pageElementRefs.current[progress.lastReadPageIndex];
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "auto", block: "start" });
+        // We set it here as a final fallback so we don't try forever
+        initialScrollChapterRef.current = currentChapterId;
+      }
+    }, 1500);
   }, [currentChapterId, isPagedMode, pages.length, readerState?.progress, titleState]);
 
   useEffect(() => {
@@ -511,6 +539,15 @@ export function ReaderPage() {
               src={page.imageUrl}
               alt={`${titleState?.details.name ?? "Chapter"} page ${page.pageIndex + 1}`}
               style={pageScale}
+              onLoad={(e) => {
+                const progress = readerState?.progress;
+                if (!isPagedMode && progress && progress.lastReadChapterId === currentChapterId) {
+                  if (initialScrollChapterRef.current !== currentChapterId && page.pageIndex === progress.lastReadPageIndex) {
+                    e.currentTarget.scrollIntoView({ behavior: "auto", block: "start" });
+                    initialScrollChapterRef.current = currentChapterId;
+                  }
+                }
+              }}
             />
           ))}
         </div>
@@ -530,43 +567,28 @@ export function ReaderPage() {
 
   return (
     <div className="reader-layout">
-      <section className="reader-main">
-        <header className="reader-topbar">
-          <div className="reader-topbar__left">
-            <button
-              type="button"
-              className="browse-search__button browse-search__button--ghost"
-              onClick={() => navigate(-1)}
-            >
-              Back
-            </button>
-            <div>
-              <span className="page__eyebrow">Reader</span>
-              <h1 className="page__title page__title--compact">
-                {titleState?.details.name ?? "Loading title..."}
-              </h1>
-            </div>
-          </div>
-
-          <div className="reader-topbar__right">
-            <span className="page__pill">
-              {currentChapterId ?? "No chapter selected"}
-            </span>
-            <span className="page__pill">
-              {isPagedMode ? `Page ${boundedPageIndex + 1}/${Math.max(pages.length, 1)}` : `Scroll mode`}
-            </span>
-          </div>
-        </header>
-
-        <section className="reader-content">
-          {status === "loading" ? <p className="browse-message">Loading reader context...</p> : renderReaderSurface()}
-        </section>
-      </section>
-
       <aside className="reader-sidebar">
-        <section className="page__panel reader-panel">
-          <h2 className="page__panel-title">Reader settings</h2>
+        <div style={{ padding: '0.5rem 1rem', marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="floirs-button floirs-button--icon"
+            onClick={() => navigate('/library')}
+            title="Library"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+          </button>
+          
+          <button
+            type="button"
+            className="floirs-button floirs-button--icon"
+            onClick={() => navigate(-1)}
+            title="Go back"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+        </div>
 
+        <section className="page__panel reader-panel">
           <label className="library-field">
             <span className="library-field__label">Mode</span>
             <select
@@ -604,63 +626,92 @@ export function ReaderPage() {
             </select>
           </label>
 
-          <label className="library-field">
+          <label className="library-field" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <span className="library-field__label">Zoom</span>
-            <input
-              className="reader-zoom-slider"
-              type="range"
-              min="50"
-              max="250"
-              step="10"
-              value={preferences.zoomPercent}
-              onChange={(event) =>
-                setPreferences((current) => ({
-                  ...current,
-                  zoomPercent: Number(event.target.value),
-                }))
-              }
-            />
-            <span className="page__pill">{preferences.zoomPercent}%</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <input
+                className="reader-zoom-slider"
+                type="range"
+                min="50"
+                max="250"
+                step="10"
+                value={preferences.zoomPercent}
+                onChange={(event) =>
+                  setPreferences((current) => ({
+                    ...current,
+                    zoomPercent: Number(event.target.value),
+                  }))
+                }
+              />
+              <span className="reader-zoom-pill">{preferences.zoomPercent}%</span>
+            </div>
           </label>
         </section>
 
         <section className="page__panel reader-panel">
-          <h2 className="page__panel-title">Chapter navigation</h2>
-          <div className="reader-nav-row">
+          <button
+            type="button"
+            className="floirs-button"
+            style={{ marginBottom: '0.5rem' }}
+            onClick={() => 
+              sourceId && sourceTitleId 
+                ? navigate(`/browse?source=${encodeURIComponent(sourceId)}&title=${encodeURIComponent(sourceTitleId)}&page=1`)
+                : navigate(-1)
+            }
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Manga Info
+          </button>
+          
+          <label className="library-field">
+            <select
+              className="browse-controls__select"
+              value={currentChapterId ?? ""}
+              onChange={(event) => handleSelectChapter(event.target.value)}
+            >
+              <option value="" disabled>Select a chapter...</option>
+              {(titleState?.chapters ?? []).map((chapter) => (
+                <option 
+                  key={chapter.chapterId} 
+                  value={chapter.chapterId}
+                  disabled={chapter.availability !== "readable"}
+                >
+                  {chapter.title} {chapter.availability !== "readable" ? `(${chapter.availabilityLabel ?? chapter.availability})` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="reader-nav-row" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <button
               type="button"
-              className="browse-search__button browse-search__button--ghost"
+              className="floirs-button"
+              style={{ flex: 1, justifyContent: 'center' }}
               disabled={!olderChapter}
               onClick={() => olderChapter && handleSelectChapter(olderChapter.chapterId)}
             >
-              Previous chapter
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Prev
             </button>
             <button
               type="button"
-              className="browse-search__button browse-search__button--ghost"
+              className="floirs-button"
+              style={{ flex: 1, justifyContent: 'center' }}
               disabled={!newerChapter}
               onClick={() => newerChapter && handleSelectChapter(newerChapter.chapterId)}
             >
-              Next chapter
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
-          </div>
-
-          <div className="reader-chapter-list">
-            {(titleState?.chapters ?? []).map((chapter) => (
-              <button
-                key={chapter.chapterId}
-                type="button"
-                className={`reader-chapter-item${chapter.chapterId === currentChapterId ? " reader-chapter-item--active" : ""}`}
-                disabled={chapter.availability !== "readable"}
-                onClick={() => handleSelectChapter(chapter.chapterId)}
-              >
-                <strong>{chapter.title}</strong>
-                <span>{chapter.availabilityLabel ?? chapter.availability}</span>
-              </button>
-            ))}
           </div>
         </section>
       </aside>
+
+      <section className="reader-main">
+        <section className="reader-content">
+          {status === "loading" ? <p className="browse-message">Loading reader context...</p> : renderReaderSurface()}
+        </section>
+      </section>
     </div>
   );
 }

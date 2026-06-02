@@ -8,3 +8,11 @@ export function listReadingHistory() {
 export function listReadingTitleAnalytics() {
   return new AnalyticsRepository(getDatabase()).listTitleAnalytics();
 }
+
+export function clearAllReadingHistory() {
+  return new AnalyticsRepository(getDatabase()).clearAllHistory();
+}
+
+export function listReadChapterIds(sourceId: string, sourceTitleId: string) {
+  return new AnalyticsRepository(getDatabase()).listReadChapterIds(sourceId, sourceTitleId);
+}

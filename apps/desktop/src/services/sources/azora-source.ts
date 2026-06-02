@@ -10,282 +10,166 @@ import type {
   SourceTitleDetails,
   SourceTitleSummary,
 } from "@contracts/source";
-import {
-  emptyPageResult,
-  extractNumericSuffix,
-  fetchCheerio,
-  fetchHtml,
-  parseChapterAvailability,
-  parseTitleStatus,
-  toAbsoluteUrl,
-  trimText,
-} from "@services/sources/source-helpers";
-import { load } from "cheerio";
+import { emptyPageResult } from "@services/sources/source-helpers";
 
-const BASE_URL = AZORA_SOURCE_METADATA.baseUrl;
+const API_BASE_URL = "https://api.azoramoon.com/api";
 
-function buildSeriesUrl(titleId: string) {
-  return new URL(`/series/${titleId}`, BASE_URL).toString();
-}
-
-function buildBrowseUrl(page: number, query?: string) {
-  const url = new URL("/series/", BASE_URL);
-
-  if (page > 1) {
-    url.searchParams.set("page", String(page));
+async function fetchJson(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Azora fetch failed: ${response.statusText}`);
   }
-
-  if (query) {
-    url.searchParams.set("searchTerm", query);
-  }
-
-  return url.toString();
+  return response.json();
 }
 
-function resolveTitleIdFromHref(href: string) {
-  const url = new URL(href, BASE_URL);
-  const parts = url.pathname.split("/").filter(Boolean);
-  return parts[1] ?? parts[0] ?? href;
-}
+async function browse(page: number): Promise<SourcePagedResult<SourceTitleSummary>> {
+  const url = `${API_BASE_URL}/query?page=${page}&perPage=25&searchTerm=&orderBy=lastChapterAddedAt&orderDirection=desc`;
+  const data = await fetchJson(url);
 
-function resolveChapterIdFromHref(href: string) {
-  const url = new URL(href, BASE_URL);
-  const parts = url.pathname.split("/").filter(Boolean);
-  return parts.at(-1) ?? href;
-}
-
-function parseTitleCards(html: string, page: number): SourcePagedResult<SourceTitleSummary> {
-  const $ = load(html);
-  const itemsById = new Map<string, SourceTitleSummary>();
-
-  $('a[href*="/series/"]').each((_, anchor) => {
-    const href = $(anchor).attr("href");
-
-    if (!href) {
-      return;
-    }
-
-    const absoluteUrl = toAbsoluteUrl(BASE_URL, href);
-
-    if (!absoluteUrl) {
-      return;
-    }
-
-    const url = new URL(absoluteUrl);
-
-    if (!url.pathname.startsWith("/series/")) {
-      return;
-    }
-
-    const parts = url.pathname.split("/").filter(Boolean);
-
-    if (parts.length !== 2) {
-      return;
-    }
-
-    const titleId = parts[1];
-    const card = $(anchor).closest("div.relative.h-full, div.relative.h-full.p-1, div.relative.h-full.p-2");
-    const container = card.length ? card : $(anchor).parent();
-    const name =
-      trimText(container.find(`a[href="${href}"]`).not(anchor).first().text()) ||
-      trimText($(anchor).attr("title")) ||
-      trimText($(anchor).text());
-
-    if (!name) {
-      return;
-    }
-
-    const coverUrl = toAbsoluteUrl(BASE_URL, container.find("img").first().attr("src"));
-    const badgeLabels = container.find("span").map((_, node) => trimText($(node).text())).get();
-    const latestChapterLabel =
-      container.find('a[href*="/chapter-"]').first().find("span").last().text().trim() ||
-      container.find('a[href*="/chapter-"]').first().text().trim() ||
-      null;
-    const descriptionSnippet = trimText(container.find("p").last().text()) || null;
-    const statusLabel =
-      badgeLabels.find((label) => /(مستمر|مكتمل|متوقف|ملغي|ongoing|complete)/i.test(label)) ??
-      (/(مستمر|مكتمل|متوقف|ملغي|ongoing|complete)/i.test(descriptionSnippet ?? "") ? descriptionSnippet : null);
-    const tags = badgeLabels.filter(
-      (label) =>
-        label &&
-        label !== statusLabel &&
-        label !== "Pinned" &&
-        !/الفصل|chapter/i.test(label),
-    );
-
-    if (!itemsById.has(titleId)) {
-      itemsById.set(titleId, {
-        titleId,
-        slug: titleId,
-        name,
-        coverUrl,
-        bannerUrl: coverUrl,
-        canonicalUrl: buildSeriesUrl(titleId),
-        status: parseTitleStatus(statusLabel),
-        statusLabel,
-        tags,
-        latestChapterLabel,
-        descriptionSnippet,
-      });
-    }
-  });
-
-  if (itemsById.size === 0) {
+  if (!data || !data.posts || data.posts.length === 0) {
     return emptyPageResult(page);
   }
 
-  const hasNextPage =
-    $('a[href*="/series/?page="], a[href*="/series?page="], a[rel="next"]').length > 0;
-
-  return {
-    items: [...itemsById.values()],
-    page,
-    hasNextPage,
-  };
-}
-
-function parseTitleDetails($: ReturnType<typeof load>, titleId: string): SourceTitleDetails {
-  const canonicalUrl =
-    $('link[rel="canonical"]').attr("href") ??
-    buildSeriesUrl(titleId);
-  const ogTitle = trimText($('meta[property="og:title"]').attr("content"));
-  const name = ogTitle || trimText($("title").text()).replace(/\s+مانهوا$/i, "");
-  const description = trimText($('meta[property="og:description"]').attr("content")) || null;
-  const coverUrl =
-    toAbsoluteUrl(BASE_URL, $('meta[property="og:image"]').attr("content")) ??
-    toAbsoluteUrl(BASE_URL, $("img").first().attr("src"));
-  const statusLabel =
-    $('p, span, div')
-      .map((_, node) => trimText($(node).text()))
-      .get()
-      .find((text) => /(مستمر|مكتمل|متوقف|ملغي|ongoing|complete)/i.test(text)) ?? null;
-
-  const tags = $('a[href*="genres"], a[href*="genre"], button, span')
-    .map((_, node) => trimText($(node).text()))
-    .get()
-    .filter((text) => text.length > 1 && text.length < 30)
-    .filter((text) => !/(trackers|refresh|view|continue|options|creator|status|language)/i.test(text));
-
-  return {
-    titleId,
-    slug: titleId,
-    name,
-    coverUrl,
-    bannerUrl: coverUrl,
-    canonicalUrl,
-    status: parseTitleStatus(statusLabel),
-    statusLabel,
-    tags: [...new Set(tags)].slice(0, 12),
+  const items: SourceTitleSummary[] = data.posts.map((post: any) => ({
+    titleId: post.slug,
+    slug: post.slug,
+    name: post.postTitle,
+    coverUrl: post.featuredImage,
+    bannerUrl: post.featuredImage,
+    canonicalUrl: `https://azoramoon.com/series/${post.slug}`,
+    status: "ongoing",
+    statusLabel: null,
+    tags: [],
     latestChapterLabel: null,
-    descriptionSnippet: description,
-    description,
-    authors: [],
-    artists: [],
-    originalLanguage: "Korean",
-    sourceLabel: "Azora Manga",
+    descriptionSnippet: post.postDescription || null,
+  }));
+
+  return {
+    items,
+    page,
+    hasNextPage: data.posts.length === 25,
   };
 }
 
-function parseChapterList($: ReturnType<typeof load>, titleId: string): SourceChapterSummary[] {
-  const chaptersById = new Map<string, SourceChapterSummary>();
-
-  $('a[href*="/chapter-"]').each((_, anchor) => {
-    const href = $(anchor).attr("href");
-
-    if (!href) {
-      return;
-    }
-
-    const absoluteUrl = toAbsoluteUrl(BASE_URL, href);
-
-    if (!absoluteUrl) {
-      return;
-    }
-
-    const chapterId = resolveChapterIdFromHref(absoluteUrl);
-    const chapterText =
-      trimText($(anchor).find("span").first().text()) ||
-      trimText($(anchor).text());
-    const chapterContainer = $(anchor);
-    const lockedOverlay =
-      chapterContainer.find("div.absolute.inset-0").length > 0 &&
-      chapterContainer.find('svg path[fill-rule="evenodd"]').length > 0;
-    const availability = parseChapterAvailability(
-      lockedOverlay ? "locked" : chapterText,
-      [
-        $(anchor).attr("class") ?? "",
-        $(anchor).find("svg").attr("class") ?? "",
-      ],
-    );
-
-    chaptersById.set(chapterId, {
-      chapterId,
-      title: chapterText || `Chapter ${chapterId}`,
-      chapterNumber: extractNumericSuffix(chapterId),
-      volumeNumber: null,
-      groupName: null,
-      releaseDate: chapterContainer.find("time").attr("datetime") ?? null,
-      canonicalUrl: absoluteUrl,
-      availability,
-      availabilityLabel:
-        availability === "locked" ? "Locked" : availability === "unavailable" ? "Unavailable" : "Readable",
-    });
-  });
-
-  return [...chaptersById.values()].sort((left, right) => {
-    const leftNumber = left.chapterNumber ?? 0;
-    const rightNumber = right.chapterNumber ?? 0;
-    return rightNumber - leftNumber;
-  });
-}
-
-async function browse(page: number) {
-  const html = await fetchHtml(buildBrowseUrl(page));
-  return parseTitleCards(html, page);
-}
-
-async function search(query: string, page = 1) {
+async function search(query: string, page = 1): Promise<SourcePagedResult<SourceTitleSummary>> {
   const normalizedQuery = query.trim();
 
   if (!normalizedQuery) {
     return emptyPageResult<SourceTitleSummary>(page);
   }
 
-  const html = await fetchHtml(buildBrowseUrl(page, normalizedQuery));
-  return parseTitleCards(html, page);
+  const url = `${API_BASE_URL}/query?page=${page}&perPage=25&searchTerm=${encodeURIComponent(normalizedQuery)}&orderBy=lastChapterAddedAt&orderDirection=desc`;
+  const data = await fetchJson(url);
+
+  if (!data || !data.posts || data.posts.length === 0) {
+    return emptyPageResult(page);
+  }
+
+  const items: SourceTitleSummary[] = data.posts.map((post: any) => ({
+    titleId: post.slug,
+    slug: post.slug,
+    name: post.postTitle,
+    coverUrl: post.featuredImage,
+    bannerUrl: post.featuredImage,
+    canonicalUrl: `https://azoramoon.com/series/${post.slug}`,
+    status: "ongoing",
+    statusLabel: null,
+    tags: [],
+    latestChapterLabel: null,
+    descriptionSnippet: post.postDescription || null,
+  }));
+
+  return {
+    items,
+    page,
+    hasNextPage: data.posts.length === 25,
+  };
 }
 
-async function getTitleDetails(titleId: string) {
-  const $ = await fetchCheerio(buildSeriesUrl(titleId));
-  return parseTitleDetails($, titleId);
+async function getTitleDetails(titleId: string): Promise<SourceTitleDetails> {
+  const url = `${API_BASE_URL}/post?postSlug=${titleId}`;
+  const data = await fetchJson(url);
+
+  if (!data || !data.post) {
+    throw new Error("Azora series not found");
+  }
+
+  const post = data.post;
+  const description = post.postContent ? post.postContent.replace(/<[^>]+>/g, '').trim() : null;
+  const genres = Array.isArray(post.genres) ? post.genres.map((g: any) => g.name).filter(Boolean) : [];
+  
+  let mappedStatus: "ongoing" | "completed" | "hiatus" | "cancelled" | "unknown" = "unknown";
+  let statusLabel = null;
+  if (post.seriesStatus === "ONGOING") { mappedStatus = "ongoing"; statusLabel = "مستمرة"; }
+  else if (post.seriesStatus === "COMPLETED") { mappedStatus = "completed"; statusLabel = "مكتملة"; }
+  else if (post.seriesStatus === "HIATUS") { mappedStatus = "hiatus"; statusLabel = "متوقفة"; }
+  else if (post.seriesStatus === "DROPPED") { mappedStatus = "cancelled"; statusLabel = "ملغية"; }
+
+  let lang = "N/A";
+  if (post.seriesType === "MANHWA") lang = "Korean (Manhwa)";
+  else if (post.seriesType === "MANHUA") lang = "Chinese (Manhua)";
+  else if (post.seriesType === "MANGA") lang = "Japanese (Manga)";
+
+  const authors = post.author ? [post.author] : [];
+  if (authors.length === 0 && post.studio) authors.push(post.studio);
+  if (authors.length === 0 && post.publishingTeam?.name) authors.push(post.publishingTeam.name);
+  if (authors.length === 0) authors.push("Unknown");
+
+  return {
+    titleId,
+    slug: titleId,
+    name: post.postTitle,
+    coverUrl: post.featuredImage,
+    bannerUrl: post.featuredImage,
+    canonicalUrl: `https://azoramoon.com/series/${titleId}`,
+    status: mappedStatus,
+    statusLabel: statusLabel || post.seriesStatus || null,
+    tags: genres.slice(0, 10),
+    latestChapterLabel: null,
+    descriptionSnippet: description,
+    description,
+    authors,
+    artists: post.artist ? [post.artist] : [],
+    originalLanguage: lang,
+    sourceLabel: "Azora Manga",
+  };
 }
 
-async function listChapters(titleId: string) {
-  const $ = await fetchCheerio(buildSeriesUrl(titleId));
-  return parseChapterList($, titleId);
+async function listChapters(titleId: string): Promise<SourceChapterSummary[]> {
+  const url = `${API_BASE_URL}/post?postSlug=${titleId}`;
+  const data = await fetchJson(url);
+
+  if (!data || !data.post || !data.post.chapters) {
+    return [];
+  }
+
+  return data.post.chapters
+    .map((ch: any) => ({
+      chapterId: String(ch.id),
+      title: ch.title || `الفصل ${ch.number}`,
+      chapterNumber: ch.number,
+      volumeNumber: null,
+      groupName: null,
+      releaseDate: ch.createdAt,
+      canonicalUrl: `https://azoramoon.com/series/${titleId}/chapter-${ch.number}`,
+      availability: "readable" as const,
+      availabilityLabel: "Readable",
+    }))
+    .sort((a: SourceChapterSummary, b: SourceChapterSummary) => (b.chapterNumber ?? 0) - (a.chapterNumber ?? 0));
 }
 
 async function getChapterPages(titleId: string, chapterId: string): Promise<SourceChapterPage[]> {
-  const chapterUrl = new URL(`/series/${titleId}/${chapterId}`, BASE_URL).toString();
-  const $ = await fetchCheerio(chapterUrl);
-  const pages = $('[data-reader-page-image], img[src*="/upload/series/"], img[src*="storage.azoramoon.com"]')
-    .map((index, image) => {
-      const src = $(image).attr("src") ?? $(image).attr("data-src");
-      const absoluteUrl = toAbsoluteUrl(BASE_URL, src);
+  const url = `${API_BASE_URL}/chapter?chapterId=${chapterId}`;
+  const data = await fetchJson(url);
 
-      if (!absoluteUrl) {
-        return null;
-      }
+  if (!data || !data.chapter || !data.chapter.images) {
+    return [];
+  }
 
-      return {
-        pageIndex: index,
-        imageUrl: absoluteUrl,
-      };
-    })
-    .get()
-    .filter((page): page is SourceChapterPage => page !== null);
-
-  return pages;
+  return data.chapter.images.map((img: any, index: number) => ({
+    pageIndex: index,
+    imageUrl: img.url || img,
+  }));
 }
 
 export const azoraSourceRuntime: SourceRuntimeContract = {

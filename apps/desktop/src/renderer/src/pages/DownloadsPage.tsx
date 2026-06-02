@@ -12,6 +12,7 @@ import {
   retryDownload,
   setDownloadDestinationType,
 } from "@renderer/shared/downloads-store";
+import { CachedImage } from "@renderer/shared/CachedImage";
 
 export function DownloadsPage() {
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
@@ -179,7 +180,7 @@ export function DownloadsPage() {
             <article className="updates-card" key={job.jobId}>
               <div className="updates-card__cover-wrap">
                 {job.coverUrl ? (
-                  <img className="updates-card__cover" src={job.coverUrl} alt={job.titleName} />
+                  <CachedImage className="updates-card__cover" src={job.coverUrl} alt={job.titleName} />
                 ) : (
                   <div className="updates-card__cover updates-card__cover--empty">No cover</div>
                 )}

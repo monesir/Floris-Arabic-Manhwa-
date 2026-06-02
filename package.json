@@ -5,6 +5,11 @@
   "scripts": {
     "dev": "pnpm --filter @floirsmnh/desktop dev",
     "build": "pnpm --filter @floirsmnh/desktop build",
-    "typecheck": "pnpm --filter @floirsmnh/desktop typecheck"
+    "typecheck": "pnpm --filter @floirsmnh/desktop typecheck",
+    "dist:dir": "pnpm --filter @floirsmnh/desktop dist:dir",
+    "dist:win": "pnpm --filter @floirsmnh/desktop dist:win"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
   }
 }

@@ -25,8 +25,28 @@ export class AnalyticsRepository {
   }
 
   logHistory(input: Omit<ReadingHistoryItem, "historyId" | "openedAt">) {
-    const historyId = randomUUID();
+    const existing = this.database
+      .prepare(
+        `
+          SELECT history_id AS historyId, chapter_id AS chapterId
+          FROM reading_history
+          WHERE source_id = ? AND source_title_id = ?
+          ORDER BY opened_at DESC
+          LIMIT 1
+        `,
+      )
+      .get(input.sourceId, input.sourceTitleId) as { historyId: string; chapterId: string } | undefined;
+
     const openedAt = new Date().toISOString();
+
+    if (existing && existing.chapterId === input.chapterId) {
+      this.database
+        .prepare(`UPDATE reading_history SET opened_at = ? WHERE history_id = ?`)
+        .run(openedAt, existing.historyId);
+      return existing.historyId;
+    }
+
+    const historyId = randomUUID();
 
     this.database
       .prepare(
@@ -176,6 +196,12 @@ export class AnalyticsRepository {
             chapter_title AS chapterTitle,
             opened_at AS openedAt
           FROM reading_history
+          WHERE opened_at = (
+            SELECT MAX(rh2.opened_at)
+            FROM reading_history rh2
+            WHERE rh2.source_id = reading_history.source_id
+              AND rh2.source_title_id = reading_history.source_title_id
+          )
           ORDER BY opened_at DESC
           LIMIT ?
         `,
@@ -205,5 +231,23 @@ export class AnalyticsRepository {
       .all() as ReadingTitleAnalytics[];
 
     return rows;
+  }
+
+  clearAllHistory() {
+    this.database.prepare(`DELETE FROM reading_history`).run();
+  }
+
+  listReadChapterIds(sourceId: string, sourceTitleId: string): string[] {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT DISTINCT chapter_id AS chapterId
+          FROM reading_history
+          WHERE source_id = ? AND source_title_id = ?
+        `,
+      )
+      .all(sourceId, sourceTitleId) as { chapterId: string }[];
+
+    return rows.map((r) => r.chapterId);
   }
 }

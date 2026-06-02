@@ -8,6 +8,7 @@ import "./app/styles.css";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AppProviders>
+      <div className="drag-region" />
       <RouterProvider router={router} />
     </AppProviders>
   </React.StrictMode>,

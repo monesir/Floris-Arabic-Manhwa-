@@ -12,8 +12,15 @@ const PHASE_ONE_SCHEMA = `
     name TEXT NOT NULL,
     version TEXT NOT NULL,
     entry_type TEXT NOT NULL CHECK(entry_type IN ('built-in', 'external')),
-    status TEXT NOT NULL CHECK(status IN ('ready', 'invalid', 'disabled')),
+    status TEXT NOT NULL CHECK(status IN ('ready', 'invalid', 'disabled', 'incompatible')),
     failure_reason TEXT,
+    plugin_directory TEXT,
+    manifest_path TEXT,
+    entry_file TEXT,
+    runtime_mode TEXT NOT NULL DEFAULT 'manifest-only' CHECK(runtime_mode IN ('built-in', 'manifest-only', 'source-runtime')),
+    compatibility_status TEXT NOT NULL DEFAULT 'unknown' CHECK(compatibility_status IN ('compatible', 'incompatible', 'unknown')),
+    compatibility_reason TEXT,
+    loaded_source_count INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -22,6 +29,8 @@ const PHASE_ONE_SCHEMA = `
     source_id TEXT PRIMARY KEY,
     plugin_id TEXT NOT NULL,
     display_name TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'unknown',
+    base_url TEXT NOT NULL DEFAULT 'https://example.invalid',
     capabilities_json TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
@@ -295,4 +304,28 @@ export function applyPhaseOneSchema(database: DatabaseSync) {
     "TEXT NOT NULL DEFAULT 'plan_to_read'",
   );
   ensureColumn(database, "library_entries", "is_favorite", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(database, "plugin_registry", "plugin_directory", "TEXT");
+  ensureColumn(database, "plugin_registry", "manifest_path", "TEXT");
+  ensureColumn(database, "plugin_registry", "entry_file", "TEXT");
+  ensureColumn(
+    database,
+    "plugin_registry",
+    "runtime_mode",
+    "TEXT NOT NULL DEFAULT 'manifest-only'",
+  );
+  ensureColumn(
+    database,
+    "plugin_registry",
+    "compatibility_status",
+    "TEXT NOT NULL DEFAULT 'unknown'",
+  );
+  ensureColumn(database, "plugin_registry", "compatibility_reason", "TEXT");
+  ensureColumn(database, "plugin_registry", "loaded_source_count", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(database, "source_registry", "language", "TEXT NOT NULL DEFAULT 'unknown'");
+  ensureColumn(
+    database,
+    "source_registry",
+    "base_url",
+    "TEXT NOT NULL DEFAULT 'https://example.invalid'",
+  );
 }

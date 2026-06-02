@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { initializeDatabase } from "@db/database";
 import { applyPhaseOneSchema } from "@db/schema";
@@ -15,6 +15,8 @@ import { initializeImportService } from "@services/imports/import-service";
 import { bootstrapReaderAnalytics } from "@services/reader/reader-service";
 import { bootstrapPluginRegistry } from "@services/plugins/plugin-registry";
 import { bootstrapSettingsState } from "@services/settings/settings-service";
+import { initCoverCache } from "@services/covers/cover-cache";
+import { registerCoverCacheIpc } from "@main/ipc/covers";
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
@@ -22,9 +24,15 @@ function createMainWindow() {
     height: 960,
     minWidth: 1100,
     minHeight: 760,
-    backgroundColor: "#0f1117",
+    backgroundColor: "#000000",
     title: "FloirsMNH",
     autoHideMenuBar: true,
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#000000",
+      symbolColor: "#ffffff",
+      height: 32,
+    },
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
       contextIsolation: true,
@@ -33,9 +41,13 @@ function createMainWindow() {
     },
   });
 
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    void shell.openExternal(details.url);
+    return { action: "deny" };
+  });
+
   if (process.env.ELECTRON_RENDERER_URL) {
     void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
-    mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     void mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
@@ -53,7 +65,7 @@ function scheduleSmokeExit() {
   }, timeout);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const userDataPath = app.getPath("userData");
   const database = initializeDatabase(join(userDataPath, "floirsmnh.db"));
 
@@ -64,10 +76,12 @@ app.whenReady().then(() => {
   applyPhaseOneSchema(database);
   bootstrapSettingsState();
   bootstrapReaderAnalytics();
-  bootstrapPluginRegistry(userDataPath);
+  await bootstrapPluginRegistry(userDataPath, app.getVersion());
   initializeDownloadService(userDataPath);
   initializeImportService(userDataPath);
+  initCoverCache(userDataPath);
   registerAnalyticsIpc();
+  registerCoverCacheIpc();
   registerDownloadsIpc();
   registerImportsIpc();
   registerLibraryIpc();

@@ -17,7 +17,7 @@ export type ReaderPreferences = z.infer<typeof readerPreferencesSchema>;
 export const DEFAULT_READER_PREFERENCES: ReaderPreferences = {
   mode: "vertical",
   fitMode: "fit-width",
-  zoomPercent: 100,
+  zoomPercent: 60,
 };
 
 export const readingProgressSnapshotSchema = z.object({

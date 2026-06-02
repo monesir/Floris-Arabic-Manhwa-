@@ -32,7 +32,7 @@ const REFRESH_LIBRARY_UPDATES_CHANNEL = "library:refresh-updates";
 const LIST_LIBRARY_UPDATES_CHANNEL = "library:list-updates";
 
 export function registerLibraryIpc() {
-  ipcMain.handle(ADD_TO_LIBRARY_CHANNEL, (_, input: AddLibraryEntryInput) => addToLibrary(input));
+  ipcMain.handle(ADD_TO_LIBRARY_CHANNEL, async (_, input: AddLibraryEntryInput) => addToLibrary(input));
   ipcMain.handle(LIST_LIBRARY_CHANNEL, (_, query?: LibraryListQuery) => listLibraryEntries(query));
   ipcMain.handle(
     UPDATE_LIBRARY_STATUS_CHANNEL,

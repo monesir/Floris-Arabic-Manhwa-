@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Reading from selected sources and managing a personal manhwa library must feel reliable, organized, and local-first without requiring any account or cloud dependency.
-**Current focus:** Phase 6 - Plugin Hardening and Release Readiness
+**Current focus:** Milestone complete - FloirsMNH v1 baseline delivered
 
 ## Current Position
 
 Phase: 6 of 6 (Plugin Hardening and Release Readiness)
-Plan: 0 of 3 in current phase
-Status: Ready to discuss and plan
-Last activity: 2026-05-18 - Completed Phase 5 downloads, imports, history, and analytics
+Plan: 3 of 3 in current phase
+Status: Complete
+Last activity: 2026-05-18 - Completed Phase 6 external plugin hardening and Windows packaging path
 
-Progress: [#########-] 89%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 21 min
-- Total execution time: 3.1 hours
+- Total plans completed: 16
+- Average duration: 20 min
+- Total execution time: 3.9 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [#########-] 89%
 | 3 | 3 | 66 min | 22 min |
 | 4 | 3 | 41 min | 14 min |
 | 5 | 4 | 67 min | 17 min |
+| 6 | 3 | 49 min | 16 min |
 
 **Recent Trend:**
-- Last 5 plans: 13 min, 18 min, 14 min, 20 min, 15 min
-- Trend: Stable; Phase 5 stayed within the broader execution band despite added filesystem and analytics work
+- Last 5 plans: 14 min, 20 min, 15 min, 17 min, 18 min
+- Trend: Stable; Phase 6 stayed within the same execution band while adding packaging work and plugin runtime hardening
 
 ## Accumulated Context
 
@@ -78,18 +79,21 @@ Recent decisions affecting current work:
 - 05-03 execution: Accept PDF import into the library model even though in-reader PDF page rendering is still constrained by the current runtime bundle.
 - 05-04 execution: Track recent reading through explicit history rows and chapter-scoped reading sessions.
 - 05-04 execution: Add a defensive analytics-table bootstrap because `node:sqlite` schema creation has been inconsistent in this environment.
+- 06-01 execution: Treat external plugins as trusted local source-handler modules with manifest-bounded entry paths rather than renderer-visible extensions.
+- 06-01 execution: Preserve invalid plugin diagnostics in the registry instead of dropping invalid external plugins that have zero active sources.
+- 06-02 execution: Make the Plugins route the primary runtime-diagnostics surface with manual rescan support.
+- 06-03 execution: Use `electron-builder` for Windows packaging, disable executable signing edits in this environment, and emit unpacked builds to `release-artifacts/`.
 
 ### Pending Todos
 
-- Discuss and plan Phase 6 with focus on external plugin runtime bounds, diagnostics UX, and release hardening.
+- Review milestone quality, package artifacts, and any post-MVP UI or product corrections for the next cycle.
 
 ### Blockers/Concerns
 
-- `node:sqlite` is still experimental upstream and should be reassessed later if Electron or packaging requirements change.
 - Live source markup for `azoramoon.com` and `olympustaff.com` can drift and will need periodic parser validation.
-- External plugin runtime hardening remains intentionally deferred even though discovery and validation now exist.
 - Verification in this shell still requires direct `.bin` command paths because `pnpm` is not on PATH.
-- External plugin runtime safety and release readiness remain the final major delivery area.
+- `node:sqlite` remains an experimental dependency and should be reassessed before any broader distribution cycle.
+- Windows packaging now succeeds for the unpacked target, but installer signing/distribution policy is still an operational decision outside code.
 
 ## Deferred Items
 
@@ -102,5 +106,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-05-18
-Stopped at: Completed Phase 5 and prepared to start Phase 6
+Stopped at: Completed all six roadmap phases and produced a Windows unpacked build
 Resume file: .planning/ROADMAP.md

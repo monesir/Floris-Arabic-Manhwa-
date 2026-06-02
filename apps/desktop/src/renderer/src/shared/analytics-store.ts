@@ -26,3 +26,11 @@ export function startReaderSession(input: {
 export function endReaderSession(sessionId: string) {
   return window.analyticsStore.endReaderSession(sessionId) as Promise<ReadingSessionSummary | null>;
 }
+
+export function clearReadingHistory() {
+  return window.analyticsStore.clearHistory() as Promise<void>;
+}
+
+export function listReadChapterIds(sourceId: string, sourceTitleId: string) {
+  return window.analyticsStore.listReadChapterIds(sourceId, sourceTitleId) as Promise<string[]>;
+}

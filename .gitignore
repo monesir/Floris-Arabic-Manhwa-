@@ -1,5 +1,8 @@
 node_modules/
 apps/*/node_modules/
 apps/*/out/
+apps/*/release/
+apps/*/release-artifacts/
+.tmp/
 dist/
 .DS_Store
