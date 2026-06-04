@@ -6,3 +6,4 @@ apps/*/release-artifacts/
 .tmp/
 dist/
 .DS_Store
+src_backup/
