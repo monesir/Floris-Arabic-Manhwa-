@@ -40,6 +40,7 @@ import type {
   SourceTitleDetails,
   SourceTitleSummary,
 } from "@contracts/source";
+import type { TachiyomiBackupResult } from "@contracts/backup";
 
 contextBridge.exposeInMainWorld("appShell", {
   platform: process.platform,
@@ -81,6 +82,9 @@ contextBridge.exposeInMainWorld("libraryStore", {
   add(input: AddLibraryEntryInput) {
     return ipcRenderer.invoke("library:add", input) as Promise<LibraryEntry>;
   },
+  remove(libraryEntryId: string) {
+    return ipcRenderer.invoke("library:remove", libraryEntryId) as Promise<void>;
+  },
   list(query?: LibraryListQuery) {
     return ipcRenderer.invoke("library:list", query) as Promise<LibraryEntry[]>;
   },
@@ -104,11 +108,20 @@ contextBridge.exposeInMainWorld("libraryStore", {
   listUpdates() {
     return ipcRenderer.invoke("library:list-updates") as Promise<LibraryUpdateItem[]>;
   },
+  updateTotalChapterCount(libraryEntryId: string, totalChapterCount: number) {
+    return ipcRenderer.invoke("library:update-total-chapters", libraryEntryId, totalChapterCount) as Promise<void>;
+  },
+  updateCover(sourceId: string, sourceTitleId: string, coverUrl: string) {
+    return ipcRenderer.invoke("library:update-cover", sourceId, sourceTitleId, coverUrl) as Promise<LibraryEntry | null>;
+  },
 });
 
 contextBridge.exposeInMainWorld("libraryLists", {
   create(input: CreateLibraryCustomListInput) {
     return ipcRenderer.invoke("library-lists:create", input) as Promise<LibraryCustomList>;
+  },
+  delete(listId: string) {
+    return ipcRenderer.invoke("library-lists:delete", listId) as Promise<void>;
   },
   list() {
     return ipcRenderer.invoke("library-lists:list") as Promise<LibraryCustomList[]>;
@@ -225,6 +238,24 @@ contextBridge.exposeInMainWorld("analyticsStore", {
   listReadChapterIds(sourceId: string, sourceTitleId: string) {
     return ipcRenderer.invoke("analytics:list-read-chapters", sourceId, sourceTitleId) as Promise<string[]>;
   },
+  getAllReadChapterCounts() {
+    return ipcRenderer.invoke("analytics:all-read-counts") as Promise<Record<string, number>>;
+  },
+  listCompletedChapterIds(sourceId: string, sourceTitleId: string) {
+    return ipcRenderer.invoke("analytics:list-completed-chapters", sourceId, sourceTitleId) as Promise<string[]>;
+  },
+  getAllCompletedChapterCounts() {
+    return ipcRenderer.invoke("analytics:all-completed-counts") as Promise<Record<string, number>>;
+  },
+  markChapterCompleted(input: {
+    sourceId: string;
+    sourceTitleId: string;
+    chapterId: string;
+    libraryEntryId: string | null;
+    completedAt: string;
+  }) {
+    return ipcRenderer.invoke("analytics:mark-chapter-completed", input) as Promise<void>;
+  },
   startReaderSession(input: {
     sourceId: string;
     sourceTitleId: string;
@@ -250,4 +281,10 @@ contextBridge.exposeInMainWorld("coverCache", {
   getSize() {
     return ipcRenderer.invoke("covers:size") as Promise<number>;
   }
+});
+
+contextBridge.exposeInMainWorld("backupStore", {
+  openTachiyomi() {
+    return ipcRenderer.invoke("backup:open-tachiyomi") as Promise<TachiyomiBackupResult | null>;
+  },
 });

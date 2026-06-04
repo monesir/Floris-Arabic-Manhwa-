@@ -34,3 +34,15 @@ export function clearReadingHistory() {
 export function listReadChapterIds(sourceId: string, sourceTitleId: string) {
   return window.analyticsStore.listReadChapterIds(sourceId, sourceTitleId) as Promise<string[]>;
 }
+
+export function getAllReadChapterCounts() {
+  return window.analyticsStore.getAllReadChapterCounts() as Promise<Record<string, number>>;
+}
+
+export function listCompletedChapterIds(sourceId: string, sourceTitleId: string) {
+  return window.analyticsStore.listCompletedChapterIds(sourceId, sourceTitleId) as Promise<string[]>;
+}
+
+export function getAllCompletedChapterCounts() {
+  return window.analyticsStore.getAllCompletedChapterCounts() as Promise<Record<string, number>>;
+}

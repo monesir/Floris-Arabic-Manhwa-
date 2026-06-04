@@ -60,6 +60,16 @@ function ensureAnalyticsTables() {
       is_active INTEGER NOT NULL DEFAULT 1,
       FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
     );
+
+    CREATE TABLE IF NOT EXISTS completed_chapters (
+      source_id TEXT NOT NULL,
+      source_title_id TEXT NOT NULL,
+      chapter_id TEXT NOT NULL,
+      library_entry_id TEXT,
+      completed_at TEXT NOT NULL,
+      PRIMARY KEY (source_id, source_title_id, chapter_id),
+      FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+    );
   `);
 }
 
@@ -110,7 +120,7 @@ export function updateReaderPreferences(preferences: ReaderPreferences) {
 }
 
 export function saveReadingProgress(input: SaveReadingProgressInput) {
-  const { libraryRepository, progressRepository } = getRepositories();
+  const { libraryRepository, progressRepository, analyticsRepository } = getRepositories();
   const parsedInput = saveReadingProgressInputSchema.parse(input);
   const linkedLibraryEntry =
     parsedInput.libraryEntryId
@@ -120,6 +130,16 @@ export function saveReadingProgress(input: SaveReadingProgressInput) {
 
   if (linkedLibraryEntry && linkedLibraryEntry.readingStatus === "plan_to_read") {
     libraryRepository.updateReadingStatus(linkedLibraryEntry.libraryEntryId, "reading");
+  }
+
+  if (parsedInput.isChapterComplete) {
+    analyticsRepository.markChapterCompleted({
+      sourceId: parsedInput.sourceId,
+      sourceTitleId: parsedInput.sourceTitleId,
+      chapterId: parsedInput.chapterId,
+      libraryEntryId: linkedLibraryEntry?.libraryEntryId ?? parsedInput.libraryEntryId ?? null,
+      completedAt: timestamp,
+    });
   }
 
   return progressRepository.upsert({

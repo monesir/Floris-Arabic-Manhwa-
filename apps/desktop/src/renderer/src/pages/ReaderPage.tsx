@@ -153,6 +153,11 @@ export function ReaderPage() {
       return;
     }
 
+    const safePageCount = Math.max(pages.length, 1);
+    const isChapterComplete = isPagedMode
+      ? pageIndex >= safePageCount - 1
+      : scrollProgress >= 0.98;
+
     if (progressSaveTimeoutRef.current !== null) {
       window.clearTimeout(progressSaveTimeoutRef.current);
     }
@@ -164,7 +169,9 @@ export function ReaderPage() {
         libraryEntryId: readerState?.libraryEntryId ?? explicitLibraryEntryId ?? null,
         chapterId: currentChapterId,
         pageIndex,
+        pageCount: safePageCount,
         scrollProgress,
+        isChapterComplete,
       }).then((nextProgress) => {
         setReaderState((current) =>
           current
@@ -177,6 +184,55 @@ export function ReaderPage() {
         );
       });
     }, 250);
+  }
+
+  function getCurrentScrollProgress() {
+    const container = scrollContainerRef.current;
+    if (!container) {
+      return 0;
+    }
+
+    const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 1);
+    return clamp(container.scrollTop / maxScrollTop, 0, 1);
+  }
+
+  function flushProgressNow() {
+    if (!sourceId || !sourceTitleId || !currentChapterId) {
+      return;
+    }
+
+    if (progressSaveTimeoutRef.current !== null) {
+      window.clearTimeout(progressSaveTimeoutRef.current);
+      progressSaveTimeoutRef.current = null;
+    }
+
+    const safePageCount = Math.max(pages.length, 1);
+    const pageIndex = isPagedMode ? boundedPageIndex : currentPageIndex;
+    const scrollProgress = isPagedMode ? 0 : getCurrentScrollProgress();
+    const isChapterComplete = isPagedMode
+      ? pageIndex >= safePageCount - 1
+      : scrollProgress >= 0.98;
+
+    void saveReadingProgress({
+      sourceId,
+      sourceTitleId,
+      libraryEntryId: readerState?.libraryEntryId ?? explicitLibraryEntryId ?? null,
+      chapterId: currentChapterId,
+      pageIndex,
+      pageCount: safePageCount,
+      scrollProgress,
+      isChapterComplete,
+    }).then((nextProgress) => {
+      setReaderState((current) =>
+        current
+          ? {
+              ...current,
+              libraryEntryId: nextProgress?.libraryEntryId ?? current.libraryEntryId,
+              progress: nextProgress,
+            }
+          : current,
+      );
+    });
   }
 
   useEffect(() => {
@@ -382,6 +438,12 @@ export function ReaderPage() {
   }, [boundedPageIndex, currentChapterId, isPagedMode, pageStatus]);
 
   useEffect(() => {
+    return () => {
+      flushProgressNow();
+    };
+  }, [boundedPageIndex, currentChapterId, currentPageIndex, explicitLibraryEntryId, isPagedMode, pages.length, readerState?.libraryEntryId, sourceId, sourceTitleId]);
+
+  useEffect(() => {
     if (!sourceId || !sourceTitleId || !currentChapterId || !titleState) {
       return;
     }
@@ -456,6 +518,7 @@ export function ReaderPage() {
   }, [isPagedMode, pages.length, preferences.mode]);
 
   function handleSelectChapter(chapterId: string) {
+    flushProgressNow();
     updateReaderParams({ chapter: chapterId }, false);
   }
 
@@ -572,7 +635,10 @@ export function ReaderPage() {
           <button
             type="button"
             className="floirs-button floirs-button--icon"
-            onClick={() => navigate('/library')}
+            onClick={() => {
+              flushProgressNow();
+              navigate('/library');
+            }}
             title="Library"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
@@ -581,7 +647,10 @@ export function ReaderPage() {
           <button
             type="button"
             className="floirs-button floirs-button--icon"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              flushProgressNow();
+              navigate(-1);
+            }}
             title="Go back"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -653,11 +722,14 @@ export function ReaderPage() {
             type="button"
             className="floirs-button"
             style={{ marginBottom: '0.5rem' }}
-            onClick={() => 
-              sourceId && sourceTitleId 
-                ? navigate(`/browse?source=${encodeURIComponent(sourceId)}&title=${encodeURIComponent(sourceTitleId)}&page=1`)
-                : navigate(-1)
-            }
+            onClick={() => {
+              flushProgressNow();
+              if (sourceId && sourceTitleId) {
+                navigate(`/browse?source=${encodeURIComponent(sourceId)}&title=${encodeURIComponent(sourceTitleId)}&page=1`);
+                return;
+              }
+              navigate(-1);
+            }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             Manga Info

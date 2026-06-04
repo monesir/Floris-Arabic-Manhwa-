@@ -46,7 +46,9 @@ export const saveReadingProgressInputSchema = z.object({
   libraryEntryId: z.string().nullable().optional(),
   chapterId: z.string(),
   pageIndex: z.number().int().min(0),
+  pageCount: z.number().int().min(1),
   scrollProgress: z.number().min(0).max(1),
+  isChapterComplete: z.boolean(),
 });
 
 export type SaveReadingProgressInput = z.infer<typeof saveReadingProgressInputSchema>;

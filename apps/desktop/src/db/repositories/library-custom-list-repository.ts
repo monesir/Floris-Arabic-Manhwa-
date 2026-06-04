@@ -50,6 +50,10 @@ export class LibraryCustomListRepository {
     return this.getById(listId);
   }
 
+  delete(listId: string) {
+    this.database.prepare(`DELETE FROM library_custom_lists WHERE list_id = ?`).run(listId);
+  }
+
   getById(listId: string) {
     const row = this.database
       .prepare(

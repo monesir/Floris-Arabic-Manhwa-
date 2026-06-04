@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ReadingHistoryItem } from "@contracts/analytics";
 import type { LibraryEntry } from "@contracts/library";
@@ -45,7 +45,25 @@ export function HistoryPage() {
   const [fetchedCovers, setFetchedCovers] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [searchDraft, setSearchDraft] = useState("");
+  const [searchValue, setSearchValue] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchValue(searchDraft.trim().toLowerCase());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchDraft]);
+
+  const filteredHistory = useMemo(() => {
+    if (!searchValue) return history;
+    return history.filter(item => {
+      const matchTitle = item.titleName.toLowerCase().includes(searchValue);
+      const matchChapter = item.chapterName?.toLowerCase().includes(searchValue);
+      return matchTitle || matchChapter;
+    });
+  }, [history, searchValue]);
 
   useEffect(() => {
     void Promise.all([listReadingHistory(), listLibraryEntries()])
@@ -69,7 +87,7 @@ export function HistoryPage() {
   useEffect(() => {
     if (status !== "ready") return;
 
-    const missing = history.filter(h => {
+    const missing = filteredHistory.filter(h => {
       const hasLibraryCover = h.libraryEntryId && libraryEntries[h.libraryEntryId];
       return !hasLibraryCover && !fetchedCovers[h.sourceTitleId] && !triedCoversRef.current.has(h.sourceTitleId);
     });
@@ -90,7 +108,7 @@ export function HistoryPage() {
         }
       }).catch(() => {});
     }
-  }, [history, status, fetchedCovers]);
+  }, [filteredHistory, status, fetchedCovers]);
 
   return (
     <section className="page" dir="ltr">
@@ -100,6 +118,8 @@ export function HistoryPage() {
             className="floirs-search-input"
             type="search"
             placeholder="Search history..."
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
           />
         </div>
         <button 
@@ -124,7 +144,7 @@ export function HistoryPage() {
         {error ? <p className="browse-message browse-message--error">{error}</p> : null}
 
         <div className="updates-list">
-          {history.map((item) => {
+          {filteredHistory.map((item) => {
             const libEntry = item.libraryEntryId ? libraryEntries[item.libraryEntryId] : null;
             const coverUrl = libEntry?.coverUrl || fetchedCovers[item.sourceTitleId];
 

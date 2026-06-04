@@ -250,4 +250,86 @@ export class AnalyticsRepository {
 
     return rows.map((r) => r.chapterId);
   }
+
+  markChapterCompleted(input: {
+    sourceId: string;
+    sourceTitleId: string;
+    chapterId: string;
+    libraryEntryId: string | null;
+    completedAt: string;
+  }) {
+    this.database
+      .prepare(
+        `
+          INSERT INTO completed_chapters (
+            source_id,
+            source_title_id,
+            chapter_id,
+            library_entry_id,
+            completed_at
+          )
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(source_id, source_title_id, chapter_id) DO UPDATE SET
+            library_entry_id = excluded.library_entry_id,
+            completed_at = excluded.completed_at
+        `,
+      )
+      .run(
+        input.sourceId,
+        input.sourceTitleId,
+        input.chapterId,
+        input.libraryEntryId,
+        input.completedAt,
+      );
+  }
+
+  listCompletedChapterIds(sourceId: string, sourceTitleId: string): string[] {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT chapter_id AS chapterId
+          FROM completed_chapters
+          WHERE source_id = ? AND source_title_id = ?
+        `,
+      )
+      .all(sourceId, sourceTitleId) as { chapterId: string }[];
+
+    return rows.map((row) => row.chapterId);
+  }
+
+  getAllReadChapterCounts(): Record<string, number> {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT source_id AS sourceId, source_title_id AS sourceTitleId, COUNT(DISTINCT chapter_id) AS readCount
+          FROM reading_history
+          GROUP BY source_id, source_title_id
+        `,
+      )
+      .all() as { sourceId: string; sourceTitleId: string; readCount: number }[];
+
+    const result: Record<string, number> = {};
+    for (const row of rows) {
+      result[`${row.sourceId}:${row.sourceTitleId}`] = row.readCount;
+    }
+    return result;
+  }
+
+  getAllCompletedChapterCounts(): Record<string, number> {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT source_id AS sourceId, source_title_id AS sourceTitleId, COUNT(*) AS completedCount
+          FROM completed_chapters
+          GROUP BY source_id, source_title_id
+        `,
+      )
+      .all() as { sourceId: string; sourceTitleId: string; completedCount: number }[];
+
+    const result: Record<string, number> = {};
+    for (const row of rows) {
+      result[`${row.sourceId}:${row.sourceTitleId}`] = row.completedCount;
+    }
+    return result;
+  }
 }

@@ -17,6 +17,7 @@ import { bootstrapPluginRegistry } from "@services/plugins/plugin-registry";
 import { bootstrapSettingsState } from "@services/settings/settings-service";
 import { initCoverCache } from "@services/covers/cover-cache";
 import { registerCoverCacheIpc } from "@main/ipc/covers";
+import { registerBackupIpc } from "@main/ipc/backup";
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
@@ -89,6 +90,7 @@ app.whenReady().then(async () => {
   registerSettingsIpc();
   registerPluginIpc(userDataPath);
   registerSourceIpc();
+  registerBackupIpc();
   createMainWindow();
   scheduleSmokeExit();
 

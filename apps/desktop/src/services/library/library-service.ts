@@ -23,6 +23,11 @@ export async function addToLibrary(input: AddLibraryEntryInput) {
   return repository.addOrUpdateEntry(input);
 }
 
+export function removeFromLibrary(libraryEntryId: string) {
+  const repository = new LibraryRepository(getDatabase());
+  repository.removeEntry(libraryEntryId);
+}
+
 export function listLibraryEntries(query?: LibraryListQuery) {
   const repository = new LibraryRepository(getDatabase());
   return repository.listAll(query);
@@ -41,6 +46,11 @@ export function setLibraryFavorite(libraryEntryId: string, isFavorite: boolean) 
 export function createLibraryCustomList(input: CreateLibraryCustomListInput) {
   const repository = new LibraryCustomListRepository(getDatabase());
   return repository.create(input);
+}
+
+export function deleteLibraryCustomList(listId: string) {
+  const repository = new LibraryCustomListRepository(getDatabase());
+  repository.delete(listId);
 }
 
 export function listLibraryCustomLists() {
@@ -64,6 +74,16 @@ export function removeLibraryEntryFromCustomList(libraryEntryId: string, listId:
   return libraryRepository.getById(libraryEntryId);
 }
 
+export function updateLibraryTotalChapterCount(libraryEntryId: string, totalChapterCount: number) {
+  const repository = new LibraryRepository(getDatabase());
+  repository.updateTotalChapterCount(libraryEntryId, totalChapterCount);
+}
+
+export function updateLibraryCover(sourceId: string, sourceTitleId: string, coverUrl: string) {
+  const repository = new LibraryRepository(getDatabase());
+  return repository.updateCoverUrlPreservingUpdatedAt(sourceId, sourceTitleId, coverUrl);
+}
+
 export async function refreshLibraryUpdates(): Promise<LibraryRefreshSummary> {
   const database = getDatabase();
   const libraryRepository = new LibraryRepository(database);
@@ -80,6 +100,8 @@ export async function refreshLibraryUpdates(): Promise<LibraryRefreshSummary> {
       const latestChapter = chapterPool[0] ?? null;
       const currentState = updateRepository.getByLibraryEntryId(entry.libraryEntryId);
       const checkedAt = new Date().toISOString();
+
+      libraryRepository.updateTotalChapterCount(entry.libraryEntryId, chapterPool.length);
 
       if (!latestChapter) {
         updateRepository.upsert({

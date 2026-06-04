@@ -33,6 +33,7 @@ const SELECT_LIBRARY_ENTRY = `
       ),
       0
     ) AS pendingUpdateCount,
+    COALESCE(total_chapter_count, 0) AS totalChapterCount,
     (
       SELECT detected_latest_chapter_title
       FROM library_entry_updates
@@ -64,6 +65,7 @@ function mapEntry(row: {
   isFavorite: number;
   listIdsJson: string;
   pendingUpdateCount: number;
+  totalChapterCount: number;
   latestDetectedChapterTitle: string | null;
   latestDetectedChapterId: string | null;
   lastUpdateCheckedAt: string | null;
@@ -243,6 +245,12 @@ export class LibraryRepository {
     return rows.map(mapEntry);
   }
 
+  removeEntry(libraryEntryId: string): void {
+    this.database
+      .prepare(`DELETE FROM library_entries WHERE library_entry_id = ?`)
+      .run(libraryEntryId);
+  }
+
   updateReadingStatus(libraryEntryId: string, readingStatus: ReadingStatus) {
     const timestamp = new Date().toISOString();
 
@@ -316,5 +324,43 @@ export class LibraryRepository {
       .get();
 
     return (row as { total: number } | undefined)?.total ?? 0;
+  }
+
+  updateTotalChapterCount(libraryEntryId: string, totalChapterCount: number) {
+    const timestamp = new Date().toISOString();
+
+    this.database
+      .prepare(
+        `
+          UPDATE library_entries
+          SET
+            total_chapter_count = @totalChapterCount,
+            updated_at = @updatedAt
+          WHERE library_entry_id = @libraryEntryId
+        `,
+      )
+      .run({
+        libraryEntryId,
+        totalChapterCount,
+        updatedAt: timestamp,
+      });
+  }
+
+  updateCoverUrlPreservingUpdatedAt(sourceId: string, sourceTitleId: string, coverUrl: string) {
+    this.database
+      .prepare(
+        `
+          UPDATE library_entries
+          SET cover_url = @coverUrl
+          WHERE source_id = @sourceId AND source_title_id = @sourceTitleId
+        `,
+      )
+      .run({
+        sourceId,
+        sourceTitleId,
+        coverUrl,
+      });
+
+    return this.getBySourceIdentity(sourceId, sourceTitleId);
   }
 }

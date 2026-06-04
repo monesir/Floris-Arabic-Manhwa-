@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type { LibraryCustomList } from "@contracts/library";
-import { listLibraryLists, createLibraryList } from "@renderer/shared/library-store";
+import { listLibraryLists, createLibraryList, deleteLibraryList } from "@renderer/shared/library-store";
 import { getPluginRegistryState } from "@renderer/shared/plugin-registry";
+import { BackupSettingsCard } from "@renderer/features/settings/BackupSettingsCard";
 
 function IconLibrary() {
   return (
@@ -113,6 +114,16 @@ function IconLanguages() {
   );
 }
 
+function IconImport() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  );
+}
+
 type NavItemProps = {
   to: string;
   label: string;
@@ -156,6 +167,8 @@ export function Sidebar() {
   const [exploreExpanded, setExploreExpanded] = useState(false);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [hoveredListId, setHoveredListId] = useState<string | null>(null);
+  const [showBackupModal, setShowBackupModal] = useState(false);
   const currentListId = searchParams.get("list");
 
   useEffect(() => {
@@ -272,23 +285,62 @@ export function Sidebar() {
                       transition: "all 0.2s",
                       color: isActive ? "#ff6740" : "#777",
                       fontWeight: isActive ? "700" : "500",
-                      backgroundColor: isActive ? "rgba(255, 103, 64, 0.1)" : "transparent"
+                      backgroundColor: isActive ? "rgba(255, 103, 64, 0.1)" : "transparent",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between"
                     }}
                     onClick={() => navigate(`/library?list=${encodeURIComponent(list.listId)}`)}
                     onMouseEnter={(e) => {
+                      setHoveredListId(list.listId);
                       if (!isActive) {
                         e.currentTarget.style.color = "#aaa";
                         e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
                       }
                     }}
                     onMouseLeave={(e) => {
+                      setHoveredListId(null);
                       if (!isActive) {
                         e.currentTarget.style.color = "#777";
                         e.currentTarget.style.backgroundColor = "transparent";
                       }
                     }}
                   >
-                    {list.name}
+                    <span>{list.name}</span>
+                    {hoveredListId === list.listId && (
+                      <div
+                        title="Delete List"
+                        style={{
+                          color: "#ff4d4f",
+                          display: "flex",
+                          padding: "2px",
+                          borderRadius: "4px",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Are you sure you want to delete the list "${list.name}"?`)) {
+                            deleteLibraryList(list.listId)
+                              .then(() => {
+                                listLibraryLists().then(setLists);
+                                if (currentListId === list.listId) {
+                                  navigate("/library");
+                                }
+                              })
+                              .catch((err) => {
+                                alert(`Failed to delete list: ${err.message}`);
+                              });
+                          }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "rgba(255, 77, 79, 0.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                      >
+                        <IconTrash />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -501,17 +553,17 @@ export function Sidebar() {
               </div>
             )}
           </div>
-          <div 
+
+          <div
             style={{ display: "flex", color: "#666", position: "relative", cursor: "pointer", transition: "color 0.2s" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#fff";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#666";
-            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "#ff6740"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "#666"}
+            onClick={() => setShowBackupModal(true)}
+            title="Import Tachiyomi Backup"
           >
-            <IconLanguages />
+            <IconImport />
           </div>
+
           <div 
             style={{ display: "flex", color: "#666", position: "relative", cursor: "pointer", transition: "color 0.2s" }}
             onMouseEnter={(e) => {
@@ -560,6 +612,36 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+
+      {showBackupModal && (
+        <div 
+          style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: "rgba(0,0,0,0.7)", zIndex: 1000,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}
+          onClick={() => setShowBackupModal(false)}
+        >
+          <div 
+            style={{ 
+              width: "500px", maxWidth: "90%", backgroundColor: "#1a1a1a", 
+              borderRadius: "8px", border: "1px solid #333", overflow: "hidden",
+              position: "relative"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setShowBackupModal(false)}
+              style={{
+                position: "absolute", top: "16px", right: "16px", 
+                background: "none", border: "none", color: "#aaa", cursor: "pointer",
+                fontSize: "20px", lineHeight: 1
+              }}
+            >×</button>
+            <BackupSettingsCard />
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

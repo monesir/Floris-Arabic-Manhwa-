@@ -16,6 +16,7 @@ export type LibraryEntry = {
   isFavorite: boolean;
   listIds: string[];
   pendingUpdateCount: number;
+  totalChapterCount: number;
   latestDetectedChapterTitle: string | null;
   latestDetectedChapterId: string | null;
   lastUpdateCheckedAt: string | null;

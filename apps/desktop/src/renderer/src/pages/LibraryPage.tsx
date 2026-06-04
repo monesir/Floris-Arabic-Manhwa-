@@ -9,7 +9,6 @@ import type { SourceCatalogItem } from "@contracts/source";
 import { LibraryCustomListsPanel } from "@renderer/features/library/LibraryCustomListsPanel";
 import { importCbz, importFolder, importPdf } from "@renderer/shared/imports-store";
 import {
-  addLibraryEntry,
   addLibraryEntryToList,
   createLibraryList,
   listLibraryEntries,
@@ -17,9 +16,11 @@ import {
   refreshLibraryUpdates,
   removeLibraryEntryFromList,
   updateLibraryEntryFavorite,
+  updateLibraryEntryCover,
   updateLibraryEntryStatus,
 } from "@renderer/shared/library-store";
 import { getSourceCatalog, searchSourceTitles } from "@renderer/shared/source-registry";
+import { getAllCompletedChapterCounts } from "@renderer/shared/analytics-store";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CachedImage } from "@renderer/shared/CachedImage";
 
@@ -82,12 +83,16 @@ export function LibraryPage() {
   const [listNameDraft, setListNameDraft] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [isRefreshingUpdates, setIsRefreshingUpdates] = useState(false);
+  const [updateNotice, setUpdateNotice] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState<null | "folder" | "cbz" | "pdf">(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
   const [pendingEntryIds, setPendingEntryIds] = useState<Record<string, boolean>>({});
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [fetchedCovers, setFetchedCovers] = useState<Record<string, string>>({});
+  const [completedCounts, setCompletedCounts] = useState<Record<string, number>>({});
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
   const triedCoversRef = useRef<Set<string>>(new Set());
 
   const filtersRef = useRef<HTMLDivElement>(null);
@@ -140,6 +145,20 @@ export function LibraryPage() {
       });
   }, [favoritesOnly, searchValue, selectedListId, sortOrder, statusFilter]);
 
+  // Auto-refresh library updates on page load
+  useEffect(() => {
+    void refreshLibraryUpdates()
+      .then(() => refreshLibraryState())
+      .catch(() => {});
+  }, []);
+
+  // Fetch completed chapter counts for all titles in one batch query
+  useEffect(() => {
+    void getAllCompletedChapterCounts()
+      .then((counts) => setCompletedCounts(counts))
+      .catch(() => {});
+  }, [entries]);
+
   // Fetch covers for library entries that have no coverUrl
   useEffect(() => {
     if (status !== "ready") return;
@@ -159,14 +178,12 @@ export function LibraryPage() {
           const match = res?.items?.find((i) => i.titleId === entry.sourceTitleId);
           if (match?.coverUrl) {
             setFetchedCovers((prev) => ({ ...prev, [entry.sourceTitleId]: match.coverUrl as string }));
-            // Also update the library entry in DB so it has the cover next time
-            void addLibraryEntry({
-              sourceId: entry.sourceId,
-              sourceTitleId: entry.sourceTitleId,
-              titleName: entry.titleName,
-              sourceTitleSlug: entry.sourceTitleSlug,
-              coverUrl: match.coverUrl,
-            });
+            // Persist the discovered cover without mutating updated_at ordering.
+            void updateLibraryEntryCover(
+              entry.sourceId,
+              entry.sourceTitleId,
+              match.coverUrl,
+            );
           }
         })
         .catch(() => {});
@@ -259,6 +276,13 @@ export function LibraryPage() {
     setSearchValue(searchDraft.trim());
   }
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchValue(searchDraft.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchDraft]);
+
   function handleResetFilters() {
     setSearchDraft("");
     setSearchValue("");
@@ -272,9 +296,18 @@ export function LibraryPage() {
   function handleRefreshUpdates() {
     setIsRefreshingUpdates(true);
     setError(null);
+    setUpdateNotice(null);
 
     void refreshLibraryUpdates()
-      .then(() => refreshLibraryState())
+      .then((summary) => {
+        if (summary.updatedCount > 0) {
+          setUpdateNotice(`Found new chapters for ${summary.updatedCount} title(s)!`);
+        } else {
+          setUpdateNotice(`Library is up to date (Checked ${summary.checkedCount} titles).`);
+        }
+        setTimeout(() => setUpdateNotice(null), 4000);
+        return refreshLibraryState();
+      })
       .catch((nextError: unknown) => {
         setError(nextError instanceof Error ? nextError.message : "Failed to refresh library updates.");
       })
@@ -393,6 +426,26 @@ export function LibraryPage() {
 
   const favoriteCount = entries.filter((entry) => entry.isFavorite).length;
 
+  async function handleDeleteSelected() {
+    if (selectedEntryIds.length === 0) {
+      setIsSelectionMode(false);
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to remove ${selectedEntryIds.length} titles from your library?`)) {
+      return;
+    }
+
+    try {
+      await Promise.all(selectedEntryIds.map(id => window.libraryStore.remove(id)));
+      setIsSelectionMode(false);
+      setSelectedEntryIds([]);
+      await refreshLibraryState();
+    } catch (err) {
+      setError("Failed to delete selected titles.");
+    }
+  }
+
   return (
     <div className="page page--floirs">
       <section className="floirs-toolbar">
@@ -411,6 +464,41 @@ export function LibraryPage() {
               }}
             />
           </div>
+          {isSelectionMode ? (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="floirs-button"
+                onClick={() => {
+                  setIsSelectionMode(false);
+                  setSelectedEntryIds([]);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="floirs-button floirs-button--danger"
+                onClick={handleDeleteSelected}
+                style={{ backgroundColor: '#ef4444', color: '#fff' }}
+              >
+                Delete ({selectedEntryIds.length})
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="floirs-button floirs-button--icon"
+              title="Select to Delete"
+              onClick={() => setIsSelectionMode(true)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             className="floirs-button floirs-button--icon"
@@ -648,7 +736,7 @@ export function LibraryPage() {
             disabled={isRefreshingUpdates}
             onClick={handleRefreshUpdates}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className={isRefreshingUpdates ? "spin" : ""} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 2v6h-6"></path>
               <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
               <path d="M3 22v-6h6"></path>
@@ -699,6 +787,7 @@ export function LibraryPage() {
         </div>
 
         {importNotice ? <p className="browse-message">{importNotice}</p> : null}
+        {updateNotice ? <p className="browse-message" style={{ color: '#4CAF50' }}>{updateNotice}</p> : null}
         {status === "loading" ? <p className="browse-message">Loading local library...</p> : null}
         {error ? <p className="browse-message browse-message--error">{error}</p> : null}
 
@@ -720,11 +809,19 @@ export function LibraryPage() {
                 <button
                   type="button"
                   className="floirs-cover-card__action"
-                  onClick={() =>
-                    navigate(
-                      `/browse?source=${encodeURIComponent(entry.sourceId)}&title=${encodeURIComponent(entry.sourceTitleId)}&page=1`,
-                    )
-                  }
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      setSelectedEntryIds(prev => 
+                        prev.includes(entry.libraryEntryId)
+                          ? prev.filter(id => id !== entry.libraryEntryId)
+                          : [...prev, entry.libraryEntryId]
+                      );
+                    } else {
+                      navigate(
+                        `/browse?source=${encodeURIComponent(entry.sourceId)}&title=${encodeURIComponent(entry.sourceTitleId)}&page=1`,
+                      );
+                    }
+                  }}
                 >
                   <div className="floirs-cover-card__media">
                     {(entry.coverUrl || fetchedCovers[entry.sourceTitleId]) ? (
@@ -736,6 +833,25 @@ export function LibraryPage() {
                     ) : (
                       <div className="floirs-cover-card__fallback">
                         {initialsFromTitle(entry.titleName)}
+                      </div>
+                    )}
+                    {isSelectionMode && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundColor: selectedEntryIds.includes(entry.libraryEntryId) ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 0, 0, 0.5)',
+                        border: selectedEntryIds.includes(entry.libraryEntryId) ? '3px solid #ef4444' : '3px solid transparent',
+                        zIndex: 20,
+                        transition: 'all 0.2s',
+                        borderRadius: 'var(--floirs-radius-lg)',
+                      }}>
+                        {selectedEntryIds.includes(entry.libraryEntryId) && (
+                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div 
@@ -763,9 +879,18 @@ export function LibraryPage() {
                     >
                       {sourceLabels.get(entry.sourceId) ?? entry.sourceId}
                     </div>
-                    {entry.pendingUpdateCount > 0 ? (
-                      <div className="library-update-badge">{entry.pendingUpdateCount}</div>
-                    ) : null}
+                    {(() => {
+                      const completedCount = completedCounts[`${entry.sourceId}:${entry.sourceTitleId}`] ?? 0;
+                      const unread = entry.totalChapterCount > 0 ? Math.max(entry.totalChapterCount - completedCount, 0) : 0;
+                      
+                      if (unread > 0) {
+                        return <div className="library-unread-badge">{unread}</div>;
+                      }
+                      if (entry.pendingUpdateCount > 0) {
+                        return <div className="library-update-badge">{entry.pendingUpdateCount}</div>;
+                      }
+                      return null;
+                    })()}
                     
                     <div className="floirs-cover-card__overlay">
                       <div className="floirs-cover-card__title" title={entry.titleName}>

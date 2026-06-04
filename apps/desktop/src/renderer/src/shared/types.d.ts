@@ -39,6 +39,7 @@ import type {
   SourceTitleDetails,
   SourceTitleSummary,
 } from "@contracts/source";
+import type { TachiyomiBackupManga, TachiyomiBackupCategory, TachiyomiBackupResult } from "@contracts/backup";
 
 export {};
 
@@ -70,6 +71,7 @@ declare global {
     };
     libraryStore: {
       add: (input: AddLibraryEntryInput) => Promise<LibraryEntry>;
+      remove: (libraryEntryId: string) => Promise<void>;
       list: (query?: LibraryListQuery) => Promise<LibraryEntry[]>;
       updateStatus: (
         libraryEntryId: string,
@@ -81,9 +83,12 @@ declare global {
       ) => Promise<LibraryEntry | null>;
       refreshUpdates: () => Promise<LibraryRefreshSummary>;
       listUpdates: () => Promise<LibraryUpdateItem[]>;
+      updateTotalChapterCount: (libraryEntryId: string, totalChapterCount: number) => Promise<void>;
+      updateCover: (sourceId: string, sourceTitleId: string, coverUrl: string) => Promise<LibraryEntry | null>;
     };
     libraryLists: {
       create: (input: CreateLibraryCustomListInput) => Promise<LibraryCustomList>;
+      delete: (listId: string) => Promise<void>;
       list: () => Promise<LibraryCustomList[]>;
       addEntry: (libraryEntryId: string, listId: string) => Promise<LibraryEntry | null>;
       removeEntry: (libraryEntryId: string, listId: string) => Promise<LibraryEntry | null>;
@@ -132,6 +137,16 @@ declare global {
       listTitleAnalytics: () => Promise<ReadingTitleAnalytics[]>;
       clearHistory: () => Promise<void>;
       listReadChapterIds: (sourceId: string, sourceTitleId: string) => Promise<string[]>;
+      getAllReadChapterCounts: () => Promise<Record<string, number>>;
+      listCompletedChapterIds: (sourceId: string, sourceTitleId: string) => Promise<string[]>;
+      getAllCompletedChapterCounts: () => Promise<Record<string, number>>;
+      markChapterCompleted: (input: {
+        sourceId: string;
+        sourceTitleId: string;
+        chapterId: string;
+        libraryEntryId: string | null;
+        completedAt: string;
+      }) => Promise<void>;
       startReaderSession: (input: {
         sourceId: string;
         sourceTitleId: string;
@@ -146,6 +161,9 @@ declare global {
       resolve: (remoteUrl: string) => Promise<string>;
       clear: () => Promise<boolean>;
       getSize: () => Promise<number>;
+    };
+    backupStore: {
+      openTachiyomi: () => Promise<TachiyomiBackupResult | null>;
     };
   }
 }

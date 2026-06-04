@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReadingTitleAnalytics } from "@contracts/analytics";
 import { LanguageSettingsCard } from "@renderer/features/settings/LanguageSettingsCard";
+import { BackupSettingsCard } from "@renderer/features/settings/BackupSettingsCard";
 import { listReadingTitleAnalytics } from "@renderer/shared/analytics-store";
 import { useLanguage } from "@renderer/features/settings/language-context";
 
@@ -59,6 +60,7 @@ export function SettingsPage() {
       </header>
 
       <LanguageSettingsCard />
+      <BackupSettingsCard />
 
       <section className="page__panel">
         <div className="library-toolbar__header">

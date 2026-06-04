@@ -23,7 +23,7 @@ async function fetchJson(url: string) {
 }
 
 async function browse(page: number): Promise<SourcePagedResult<SourceTitleSummary>> {
-  const url = `${API_BASE_URL}/query?page=${page}&perPage=25&searchTerm=&orderBy=lastChapterAddedAt&orderDirection=desc`;
+  const url = `${API_BASE_URL}/query?page=${page}&perPage=20&searchTerm=&orderBy=lastChapterAddedAt&orderDirection=desc`;
   const data = await fetchJson(url);
 
   if (!data || !data.posts || data.posts.length === 0) {
@@ -47,7 +47,7 @@ async function browse(page: number): Promise<SourcePagedResult<SourceTitleSummar
   return {
     items,
     page,
-    hasNextPage: data.posts.length === 25,
+    hasNextPage: data.posts.length === 20,
   };
 }
 
@@ -58,7 +58,7 @@ async function search(query: string, page = 1): Promise<SourcePagedResult<Source
     return emptyPageResult<SourceTitleSummary>(page);
   }
 
-  const url = `${API_BASE_URL}/query?page=${page}&perPage=25&searchTerm=${encodeURIComponent(normalizedQuery)}&orderBy=lastChapterAddedAt&orderDirection=desc`;
+  const url = `${API_BASE_URL}/query?page=${page}&perPage=20&searchTerm=${encodeURIComponent(normalizedQuery)}&orderBy=lastChapterAddedAt&orderDirection=desc`;
   const data = await fetchJson(url);
 
   if (!data || !data.posts || data.posts.length === 0) {
@@ -82,7 +82,7 @@ async function search(query: string, page = 1): Promise<SourcePagedResult<Source
   return {
     items,
     page,
-    hasNextPage: data.posts.length === 25,
+    hasNextPage: data.posts.length === 20,
   };
 }
 

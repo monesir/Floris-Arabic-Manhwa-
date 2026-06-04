@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type {
   SourceCatalogItem,
   SourceChapterAvailability,
@@ -14,9 +14,9 @@ import {
   searchSourceTitles,
 } from "@renderer/shared/source-registry";
 import { enqueueDownload } from "@renderer/shared/downloads-store";
-import { addLibraryEntry, listLibraryEntries, listLibraryLists, addLibraryEntryToList } from "@renderer/shared/library-store";
+import { addLibraryEntry, listLibraryEntries, listLibraryLists, addLibraryEntryToList, removeLibraryEntryFromList, updateLibraryTotalChapterCount, removeLibraryEntry } from "@renderer/shared/library-store";
 import { getReaderState } from "@renderer/shared/reader-store";
-import { listReadChapterIds } from "@renderer/shared/analytics-store";
+import { listCompletedChapterIds } from "@renderer/shared/analytics-store";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CachedImage } from "@renderer/shared/CachedImage";
 
@@ -74,6 +74,7 @@ export function BrowseWorkspace() {
   const [resultsStatus, setResultsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [detailStatus, setDetailStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [libraryState, setLibraryState] = useState<Record<string, string>>({});
+  const [libraryListsState, setLibraryListsState] = useState<Record<string, string[]>>({});
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -85,14 +86,15 @@ export function BrowseWorkspace() {
   const [browseCoverMap, setBrowseCoverMap] = useState<Record<string, string>>({});
   const [availableLists, setAvailableLists] = useState<LibraryCustomList[]>([]);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [selectedListsForAdd, setSelectedListsForAdd] = useState<string[]>([]);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
-  const [readChapterIds, setReadChapterIds] = useState<Set<string>>(new Set());
-  const [sortOrder, setSortOrder] = useState<"default" | "az" | "za">("default");
+  const [completedChapterIds, setCompletedChapterIds] = useState<Set<string>>(new Set());
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const sourceId = searchParams.get("source");
   const activeQuery = searchParams.get("query") ?? "";
-  const page = Number(searchParams.get("page") ?? "1");
+  const [internalPage, setInternalPage] = useState(1);
+  const [accumulatedItems, setAccumulatedItems] = useState<SourceTitleSummary[]>([]);
   const titleId = searchParams.get("title");
 
   const activeSource = useMemo(
@@ -106,14 +108,14 @@ export function BrowseWorkspace() {
 
     void getSourceCatalog()
       .then((nextCatalog) => {
-        setCatalog(nextCatalog);
+        const filteredCatalog = nextCatalog.filter(s => s.metadata.displayName !== "Local Imports");
+        setCatalog(filteredCatalog);
         setCatalogStatus("ready");
 
-        if (!sourceId && nextCatalog[0]) {
+        if (!sourceId && filteredCatalog[0]) {
           startTransition(() => {
             const nextParams = new URLSearchParams(searchParams);
-            nextParams.set("source", nextCatalog[0].metadata.sourceId);
-            nextParams.set("page", "1");
+            nextParams.set("source", filteredCatalog[0].metadata.sourceId);
             setSearchParams(nextParams, { replace: true });
           });
         }
@@ -128,12 +130,15 @@ export function BrowseWorkspace() {
     void listLibraryEntries()
       .then((entries) => {
         const nextState: Record<string, string> = {};
+        const nextListsState: Record<string, string[]> = {};
 
         for (const entry of entries) {
           nextState[`${entry.sourceId}:${entry.sourceTitleId}`] = entry.libraryEntryId;
+          nextListsState[entry.libraryEntryId] = entry.listIds ?? [];
         }
 
         setLibraryState(nextState);
+        setLibraryListsState(nextListsState);
       })
       .catch(() => {
         setLibraryNotice(null);
@@ -141,8 +146,51 @@ export function BrowseWorkspace() {
   }, []);
 
   useEffect(() => {
-    setQueryDraft(activeQuery);
+    setQueryDraft(prev => {
+      if (activeQuery !== prev && activeQuery !== prev.trim()) {
+        return activeQuery;
+      }
+      return prev;
+    });
   }, [activeQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = queryDraft.trim() || null;
+      setSearchParams(prev => {
+        const currentQuery = prev.get("query") || null;
+        if (trimmed === currentQuery) return prev;
+        
+        const next = new URLSearchParams(prev);
+        if (trimmed) {
+          next.set("query", trimmed);
+        } else {
+          next.delete("query");
+        }
+        next.set("page", "1");
+        next.delete("title");
+        return next;
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [queryDraft, setSearchParams]);
+
+  useEffect(() => {
+    setInternalPage(1);
+    setAccumulatedItems([]);
+  }, [activeSource?.metadata.sourceId, activeQuery, refreshTrigger]);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
+    if (resultsStatus === "loading") return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && results?.hasNextPage) {
+        setInternalPage(prev => prev + 1);
+      }
+    });
+    if (node) observerRef.current.observe(node);
+  }, [resultsStatus, results?.hasNextPage]);
 
   useEffect(() => {
     if (!activeSource) {
@@ -153,8 +201,8 @@ export function BrowseWorkspace() {
     setResultsError(null);
 
     const task = activeQuery
-      ? searchSourceTitles(activeSource.metadata.sourceId, activeQuery, page)
-      : browseSourceTitles(activeSource.metadata.sourceId, page);
+      ? searchSourceTitles(activeSource.metadata.sourceId, activeQuery, internalPage)
+      : browseSourceTitles(activeSource.metadata.sourceId, internalPage);
 
     void task
       .then((payload) => {
@@ -163,13 +211,19 @@ export function BrowseWorkspace() {
           page: payload.page,
           hasNextPage: payload.hasNextPage,
         });
+        setAccumulatedItems(prev => {
+          if (payload.page === 1) return payload.items;
+          const existingIds = new Set(prev.map(i => i.titleId));
+          const newItems = payload.items.filter(i => !existingIds.has(i.titleId));
+          return [...prev, ...newItems];
+        });
         setResultsStatus("ready");
       })
       .catch((error: unknown) => {
         setResultsStatus("error");
         setResultsError(error instanceof Error ? error.message : "Failed to load source results.");
       });
-  }, [activeSource?.metadata.sourceId, activeQuery, page, refreshTrigger]);
+  }, [activeSource?.metadata.sourceId, activeQuery, internalPage, refreshTrigger]);
 
   useEffect(() => {
     if (!activeSource || !titleId) {
@@ -179,6 +233,7 @@ export function BrowseWorkspace() {
       return;
     }
 
+    setDetail(null);
     setDetailStatus("loading");
     setDetailError(null);
 
@@ -186,6 +241,15 @@ export function BrowseWorkspace() {
       .then((payload) => {
         setDetail(payload);
         setDetailStatus("ready");
+
+        // Update total chapter count in library if entry exists
+        const libraryKey = `${activeSource.metadata.sourceId}:${titleId}`;
+        const libraryEntryId = libraryState[libraryKey];
+        if (libraryEntryId) {
+          const readableChapters = payload.chapters.filter((ch) => ch.availability === "readable");
+          const totalCount = readableChapters.length || payload.chapters.length;
+          void updateLibraryTotalChapterCount(libraryEntryId, totalCount);
+        }
       })
       .catch((error: unknown) => {
         setDetailStatus("error");
@@ -223,12 +287,12 @@ export function BrowseWorkspace() {
 
   useEffect(() => {
     if (!activeSource || !titleId) {
-      setReadChapterIds(new Set());
+      setCompletedChapterIds(new Set());
       return;
     }
-    void listReadChapterIds(activeSource.metadata.sourceId, titleId)
-      .then((ids) => setReadChapterIds(new Set(ids)))
-      .catch(() => setReadChapterIds(new Set()));
+    void listCompletedChapterIds(activeSource.metadata.sourceId, titleId)
+      .then((ids) => setCompletedChapterIds(new Set(ids)))
+      .catch(() => setCompletedChapterIds(new Set()));
   }, [activeSource?.metadata.sourceId, titleId]);
 
   useEffect(() => {
@@ -294,7 +358,7 @@ export function BrowseWorkspace() {
     }
     updateParams({
       title: nextTitleId,
-    });
+    }, true);
   }
 
   function handleRefreshDetail() {
@@ -312,20 +376,46 @@ export function BrowseWorkspace() {
       });
   }
 
-  function handleChangePage(nextPage: number) {
-    updateParams({
-      page: String(nextPage),
-      title: null,
-    });
-  }
-
-  function handleAddToLibrary(targetListId?: string) {
+  function handleAddToLibrary(targetListIds?: string[]) {
     if (!activeSource || !detail || isSavingToLibrary) {
       return;
     }
 
     setIsSavingToLibrary(true);
     setLibraryNotice(null);
+
+    const existingEntryId = libraryState[`${activeSource.metadata.sourceId}:${detail.details.titleId}`];
+
+    if (existingEntryId && targetListIds) {
+      // Entry already in library — diff current vs selected
+      const currentLists = libraryListsState[existingEntryId] ?? [];
+      const toAdd = targetListIds.filter(id => !currentLists.includes(id));
+      const toRemove = currentLists.filter(id => !targetListIds.includes(id));
+
+      const ops: Promise<unknown>[] = [
+        ...toAdd.map(id => addLibraryEntryToList(existingEntryId, id)),
+        ...toRemove.map(id => removeLibraryEntryFromList(existingEntryId, id)),
+      ];
+
+      if (ops.length === 0) {
+        setIsSavingToLibrary(false);
+        setShowCategoryMenu(false);
+        return;
+      }
+
+      Promise.all(ops)
+        .then(() => {
+          setLibraryListsState(prev => ({ ...prev, [existingEntryId]: [...targetListIds] }));
+          setLibraryNotice(`Updated lists.`);
+        })
+        .catch(() => {
+          setLibraryNotice(`Failed to update lists.`);
+        })
+        .finally(() => {
+          setIsSavingToLibrary(false);
+        });
+      return;
+    }
 
     void addLibraryEntry({
       sourceId: activeSource.metadata.sourceId,
@@ -344,11 +434,17 @@ export function BrowseWorkspace() {
           libraryEntryId: entry.libraryEntryId,
         }));
 
-        if (targetListId) {
-          void addLibraryEntryToList(entry.libraryEntryId, targetListId)
+        // Update total chapter count immediately so unread badge shows in library
+        if (detail) {
+          const readableChapters = detail.chapters.filter((ch) => ch.availability === "readable");
+          const totalCount = readableChapters.length || detail.chapters.length;
+          void updateLibraryTotalChapterCount(entry.libraryEntryId, totalCount);
+        }
+
+        if (targetListIds && targetListIds.length > 0) {
+          Promise.all(targetListIds.map(id => addLibraryEntryToList(entry.libraryEntryId, id)))
             .then(() => {
-              const listName = availableLists.find(l => l.listId === targetListId)?.name ?? "category";
-              setLibraryNotice(`Saved "${entry.titleName}" to ${listName}.`);
+              setLibraryNotice(`Saved "${entry.titleName}" to selected lists.`);
             })
             .catch(() => {
               setLibraryNotice(`Saved "${entry.titleName}" to the local library.`);
@@ -359,6 +455,43 @@ export function BrowseWorkspace() {
       })
       .catch((error: unknown) => {
         setLibraryNotice(error instanceof Error ? error.message : "Failed to save title to library.");
+      })
+      .finally(() => {
+        setIsSavingToLibrary(false);
+      });
+  }
+
+  function handleRemoveFromLibrary() {
+    const savedLibraryEntryId = activeSource && detail
+      ? libraryState[`${activeSource.metadata.sourceId}:${detail.details.titleId}`]
+      : null;
+      
+    if (!savedLibraryEntryId || isSavingToLibrary) {
+      return;
+    }
+
+    setIsSavingToLibrary(true);
+    setLibraryNotice(null);
+
+    void removeLibraryEntry(savedLibraryEntryId)
+      .then(() => {
+        setLibraryState((current) => {
+          const next = { ...current };
+          if (activeSource && detail) {
+            delete next[`${activeSource.metadata.sourceId}:${detail.details.titleId}`];
+          }
+          return next;
+        });
+        setReaderState((current) => ({
+          progressChapterId: current?.progressChapterId ?? null,
+          libraryEntryId: null,
+        }));
+        setLibraryNotice("Removed from library");
+        setTimeout(() => setLibraryNotice(null), 3000);
+      })
+      .catch((error: unknown) => {
+        setLibraryNotice(error instanceof Error ? error.message : "Failed to remove from library");
+        setTimeout(() => setLibraryNotice(null), 5000);
       })
       .finally(() => {
         setIsSavingToLibrary(false);
@@ -422,12 +555,7 @@ export function BrowseWorkspace() {
     ? detail.chapters.filter((chapter) => chapter.availability === "readable").length
     : 0;
 
-  const sortedItems = useMemo(() => {
-    if (!results?.items) return [];
-    if (sortOrder === "default") return results.items;
-    const sorted = [...results.items].sort((a, b) => a.name.localeCompare(b.name));
-    return sortOrder === "za" ? sorted.reverse() : sorted;
-  }, [results?.items, sortOrder]);
+
 
   return (
     <div className="browse-page browse-page--floirs">
@@ -462,29 +590,15 @@ export function BrowseWorkspace() {
                 </select>
               </div>
 
-              <button 
-                className="floirs-button floirs-button--icon" 
-                type="button" 
-                title={sortOrder === "default" ? "Sort A → Z" : sortOrder === "az" ? "Sort Z → A" : "Sort Default"}
-                onClick={() => {
-                  setSortOrder((prev) => prev === "default" ? "az" : prev === "az" ? "za" : "default");
-                }}
-                style={{ color: sortOrder !== "default" ? "#7c5cff" : undefined }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="15" y1="18" x2="15" y2="6"></line>
-                  <polyline points="11 14 15 18 19 14"></polyline>
-                  <line x1="9" y1="6" x2="9" y2="18"></line>
-                  <polyline points="13 10 9 6 5 10"></polyline>
-                </svg>
-              </button>
+
               <button 
                 className="floirs-button floirs-button--icon" 
                 type="button" 
                 onClick={() => setRefreshTrigger((n) => n + 1)}
                 title="Refresh"
+                disabled={resultsStatus === "loading"}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className={resultsStatus === "loading" ? "spin" : ""} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                   <path d="M3 3v5h5"></path>
                 </svg>
@@ -494,11 +608,11 @@ export function BrowseWorkspace() {
 
           {catalogError ? <p className="browse-message browse-message--error">{catalogError}</p> : null}
           {catalogStatus === "loading" ? <p className="browse-message">Loading sources...</p> : null}
-          {resultsError ? <p className="browse-message browse-message--error">{resultsError}</p> : null}
-          {resultsStatus === "loading" ? <p className="browse-message">Loading source results...</p> : null}
+          {resultsStatus === "error" ? <p className="browse-message browse-message--error">{resultsError}</p> : null}
+          {resultsStatus === "loading" && !results ? <p className="browse-message">Loading source results...</p> : null}
 
           <section className="floirs-grid floirs-grid--browse">
-            {sortedItems.map((item) => (
+            {accumulatedItems.map((item) => (
               <article
                 key={`${activeSource?.metadata.sourceId}:${item.titleId}`}
                 className="floirs-cover-card floirs-cover-card--browse"
@@ -526,50 +640,29 @@ export function BrowseWorkspace() {
           </section>
 
           {results?.items.length === 0 && resultsStatus === "ready" ? (
-            <p className="browse-message">No titles matched this source query.</p>
+            <p className="browse-message">Nothing.</p>
           ) : null}
 
           <div className="browse-pagination browse-pagination--floirs">
-            <button
-              type="button"
-              className="floirs-button floirs-button--ghost"
-              disabled={!results || results.page <= 1}
-              onClick={() => handleChangePage((results?.page ?? 1) - 1)}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              className="floirs-button floirs-button--ghost"
-              disabled={!results?.hasNextPage}
-              onClick={() => handleChangePage((results?.page ?? 1) + 1)}
-            >
-              Next
-            </button>
+            {results?.hasNextPage && (
+              <div ref={loadMoreRef} style={{ padding: '2rem 0', width: '100%', textAlign: 'center' }}>
+                {resultsStatus === "loading" && <p className="browse-message">Loading more...</p>}
+              </div>
+            )}
           </div>
         </>
       ) : null}
 
       {titleId ? (
         <section className="series-detail">
-          {!detail && (
-            <div className="series-detail__backbar" style={{ position: 'absolute', top: '1.5rem', left: '2rem', zIndex: 20 }}>
-              <button
-                type="button"
-                className="floirs-button floirs-button--icon"
-                title="Back to library"
-                onClick={() => updateParams({ title: null })}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-              </button>
-            </div>
-          )}
+
 
           {detailError ? <p className="browse-message browse-message--error">{detailError}</p> : null}
-          {detailStatus === "loading" ? <p className="browse-message">Loading title details...</p> : null}
+          {detailStatus === "loading" && !detail ? (
+            <div style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <p className="browse-message">Loading title details...</p>
+            </div>
+          ) : null}
 
           {detail ? (
             <>
@@ -578,8 +671,8 @@ export function BrowseWorkspace() {
                   <button
                     type="button"
                     className="floirs-button floirs-button--icon"
-                    title="Back to library"
-                    onClick={() => updateParams({ title: null })}
+                    title="Back"
+                    onClick={() => navigate(-1)}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -612,48 +705,90 @@ export function BrowseWorkspace() {
                     className="floirs-button floirs-button--icon"
                     onClick={handleRefreshDetail}
                     title="Refresh Chapters"
+                    disabled={detailStatus === "loading"}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    <svg className={detailStatus === "loading" ? "spin" : ""} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                   </button>
                   <div style={{ position: 'relative' }} ref={categoryMenuRef}>
                     <button
-                      type="button"
-                      className="floirs-button"
-                      onClick={() => {
-                        if (availableLists.length > 0) {
-                          setShowCategoryMenu(!showCategoryMenu);
-                        } else {
-                          handleAddToLibrary();
-                        }
-                      }}
-                      disabled={isSavingToLibrary || Boolean(savedLibraryEntryId)}
-                      style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                    >
-                      {savedLibraryEntryId ? "Saved to library" : isSavingToLibrary ? "Saving..." : "Add to library"}
-                    </button>
-                    {showCategoryMenu && !savedLibraryEntryId && (
-                      <div className="floirs-menu" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', width: '200px', zIndex: 100, background: '#000000', border: '1px solid #333', borderRadius: '6px', overflow: 'hidden' }}>
+                        type="button"
+                        className="floirs-button"
+                        onClick={() => {
+                          if (availableLists.length > 0) {
+                            // Pre-select lists the entry already belongs to
+                            if (savedLibraryEntryId) {
+                              const currentLists = libraryListsState[savedLibraryEntryId] ?? [];
+                              setSelectedListsForAdd(currentLists);
+                            } else {
+                              setSelectedListsForAdd([]);
+                            }
+                            setShowCategoryMenu(!showCategoryMenu);
+                          } else {
+                            handleAddToLibrary();
+                          }
+                        }}
+                        disabled={isSavingToLibrary}
+                        style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                      >
+                        {isSavingToLibrary ? "Saving..." : savedLibraryEntryId ? "Add or Edit" : "Add"}
+                      </button>
+                    {showCategoryMenu && (
+                      <div className="floirs-menu" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', width: '220px', zIndex: 100, background: '#000000', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '8px', padding: '0.5rem' }}>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {!savedLibraryEntryId && (
+                            <label
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', color: '#e0e0e0', cursor: 'pointer', fontSize: '0.85rem', borderRadius: '4px' }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedListsForAdd.length === 0}
+                                onChange={() => setSelectedListsForAdd([])}
+                              />
+                              Default Library
+                            </label>
+                          )}
+                          {availableLists.map((list) => (
+                            <label
+                              key={list.listId}
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', color: '#e0e0e0', cursor: 'pointer', fontSize: '0.85rem', borderRadius: '4px' }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedListsForAdd.includes(list.listId)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedListsForAdd(prev => [...prev, list.listId]);
+                                  } else {
+                                    setSelectedListsForAdd(prev => prev.filter(id => id !== list.listId));
+                                  }
+                                }}
+                              />
+                              {list.name}
+                            </label>
+                          ))}
+                        </div>
                         <button
                           type="button"
-                          style={{ width: '100%', textAlign: 'left', padding: '0.6rem 1rem', background: 'transparent', border: 'none', borderBottom: '1px solid #333', color: '#e0e0e0', cursor: 'pointer', fontSize: '0.85rem' }}
-                          onClick={() => { setShowCategoryMenu(false); handleAddToLibrary(); }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          className="floirs-button"
+                          style={{ width: '100%', marginTop: '0.5rem', padding: '0.4rem', background: '#333333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.15s' }}
+                          onClick={() => {
+                            setShowCategoryMenu(false);
+                            handleAddToLibrary(selectedListsForAdd);
+                            // Update local listIds state
+                            if (savedLibraryEntryId) {
+                              setLibraryListsState(prev => ({ ...prev, [savedLibraryEntryId]: [...selectedListsForAdd] }));
+                            }
+                            setSelectedListsForAdd([]);
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#555555'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = '#333333'}
                         >
-                          Default Library
+                          Confirm Add
                         </button>
-                        {availableLists.map((list) => (
-                          <button
-                            key={list.listId}
-                            type="button"
-                            style={{ width: '100%', textAlign: 'left', padding: '0.6rem 1rem', background: 'transparent', border: 'none', color: '#e0e0e0', cursor: 'pointer', fontSize: '0.85rem' }}
-                            onClick={() => { setShowCategoryMenu(false); handleAddToLibrary(list.listId); }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                          >
-                            {list.name}
-                          </button>
-                        ))}
                       </div>
                     )}
                   </div>
@@ -739,13 +874,13 @@ export function BrowseWorkspace() {
                   <div className="series-detail__table-head">
                     <span>TITLE</span>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', textTransform: 'none', letterSpacing: 'normal' }}>
-                      <span className="page__pill" style={{ background: '#0B0B0B', padding: '0.35rem 1rem', fontSize: '0.85rem', fontWeight: 500, color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.08)' }}>Chapters: <strong style={{color: '#fff', marginLeft: '0.25rem'}}>{detail.chapters.length}</strong></span>
-                      <span className="page__pill" style={{ background: '#0B0B0B', padding: '0.35rem 1rem', fontSize: '0.85rem', fontWeight: 500, color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.08)' }}>Readable: <strong style={{color: '#fff', marginLeft: '0.25rem'}}>{detailReadableCount}</strong></span>
+                      <span className="page__pill" style={{ background: '#0B0B0B', padding: '0.35rem 1rem', fontSize: '0.85rem', fontWeight: 500, color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '99px' }}>Chapters: <strong style={{color: '#4aa6ff', marginLeft: '0.25rem'}}>{detail.chapters.length}</strong></span>
+                      <span className="page__pill" style={{ background: '#0B0B0B', padding: '0.35rem 1rem', fontSize: '0.85rem', fontWeight: 500, color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '99px' }}>Readable: <strong style={{color: '#4ce07a', marginLeft: '0.25rem'}}>{detailReadableCount}</strong></span>
                     </div>
                   </div>
 
                   {detail.chapters.map((chapter, index) => {
-                    const isRead = readChapterIds.has(chapter.chapterId);
+                    const isRead = completedChapterIds.has(chapter.chapterId);
                     return (
                     <div 
                       className="series-detail__table-row" 

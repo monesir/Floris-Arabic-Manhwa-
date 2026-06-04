@@ -271,6 +271,16 @@ const ANALYTICS_SCHEMA = `
     is_active INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
   );
+
+  CREATE TABLE IF NOT EXISTS completed_chapters (
+    source_id TEXT NOT NULL,
+    source_title_id TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    library_entry_id TEXT,
+    completed_at TEXT NOT NULL,
+    PRIMARY KEY (source_id, source_title_id, chapter_id),
+    FOREIGN KEY(library_entry_id) REFERENCES library_entries(library_entry_id) ON DELETE SET NULL
+  );
 `;
 
 function ensureColumn(
@@ -304,6 +314,7 @@ export function applyPhaseOneSchema(database: DatabaseSync) {
     "TEXT NOT NULL DEFAULT 'plan_to_read'",
   );
   ensureColumn(database, "library_entries", "is_favorite", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(database, "library_entries", "total_chapter_count", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(database, "plugin_registry", "plugin_directory", "TEXT");
   ensureColumn(database, "plugin_registry", "manifest_path", "TEXT");
   ensureColumn(database, "plugin_registry", "entry_file", "TEXT");
